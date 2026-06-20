@@ -102,8 +102,6 @@ body {
   color: #0f1419;
   background: #f7f9f9;
   border-top: 1px solid #eff3f4;
-  max-height: 340px;
-  overflow-y: auto;
   white-space: pre-wrap;
 }
 .action-bar {
@@ -339,4 +337,21 @@ body {
 .report-thanks .msg {
   font-size: 18px;
   font-weight: 800;
+}
+/* Mobile: stack feed → comments → sidebar vertically */
+@media (max-width: 600px) {
+  #app {
+    padding: 12px 10px 32px;
+  }
+  #feed-layout {
+    flex-direction: column;
+    gap: 12px;
+  }
+  #feed-root,
+  #sidebar {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    flex: none;
+  }
 }
