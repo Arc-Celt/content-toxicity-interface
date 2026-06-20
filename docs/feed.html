@@ -1,0 +1,1936 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Social Feed Study</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f7f9f9;
+        color: #0f1419;
+        min-height: 100vh;
+      }
+      #loading,
+      #error-msg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-size: 16px;
+        color: #536471;
+      }
+      #error-msg {
+        color: #f4212e;
+        display: none;
+      }
+      #app {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 20px 16px 40px;
+        display: none;
+      }
+      #feed-layout {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      /* Main column */
+      #feed-root {
+        flex: 1 1 380px;
+        min-width: 300px;
+        max-width: 520px;
+        transition: opacity 0.18s ease;
+      }
+      .post-card {
+        background: #fff;
+        border: 1px solid #eff3f4;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .post-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px 8px;
+      }
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #cfd9de;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
+        color: #536471;
+        flex-shrink: 0;
+      }
+      .post-author-name {
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .post-author-handle {
+        color: #536471;
+        font-size: 13px;
+      }
+      .post-time {
+        color: #536471;
+        font-size: 13px;
+        margin-left: auto;
+      }
+      .post-title {
+        padding: 0 16px 10px;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      #stim-media {
+        width: 100%;
+      }
+      #stim-media iframe {
+        width: 100%;
+        aspect-ratio: 16/9;
+        display: block;
+        border: none;
+      }
+      .transcript-box {
+        padding: 14px 16px;
+        font-size: 14px;
+        line-height: 1.65;
+        color: #0f1419;
+        background: #f7f9f9;
+        border-top: 1px solid #eff3f4;
+        max-height: 340px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+      .action-bar {
+        display: flex;
+        justify-content: space-around;
+        padding: 8px 0;
+        border-top: 1px solid #eff3f4;
+      }
+      .action-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        color: #536471;
+        padding: 6px 10px;
+        border-radius: 999px;
+        transition:
+          background-color 0.16s ease,
+          color 0.16s ease,
+          transform 0.08s ease;
+      }
+      .action-btn svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+      .reply-box {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 10px 16px;
+        border-top: 1px solid #eff3f4;
+      }
+      .reply-box .avatar {
+        width: 34px;
+        height: 34px;
+        font-size: 13px;
+      }
+      #post-reply-input {
+        flex: 1;
+        border: 1px solid #cfd9de;
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        resize: none;
+        min-height: 38px;
+        overflow: hidden;
+        transition:
+          border-color 0.16s ease,
+          box-shadow 0.16s ease,
+          min-height 0.16s ease;
+      }
+      .send-btn {
+        display: none;
+        background: #0f1419;
+        color: #fff;
+        border: none;
+        border-radius: 18px;
+        padding: 8px 16px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        font-size: 14px;
+        transition:
+          background-color 0.16s ease,
+          transform 0.08s ease;
+      }
+
+      /* Comments */
+      .comment-section {
+        margin-top: 1px;
+        background: #fff;
+        border: 1px solid #eff3f4;
+        border-radius: 0 0 12px 12px;
+        padding-bottom: 4px;
+      }
+      .comment-section-title {
+        padding: 12px 16px 4px;
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .view-more-btn {
+        width: 100%;
+        background: none;
+        border: none;
+        color: #1d9bf0;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 12px;
+        display: block;
+        border-top: 1px solid #eff3f4;
+        transition: background 0.15s;
+      }
+      .view-more-btn:hover {
+        background: #e8f5fd;
+      }
+
+      /* Sidebar */
+      #sidebar {
+        flex: 1 1 240px;
+        min-width: 210px;
+        max-width: 300px;
+      }
+      .sidebar-heading {
+        font-size: 16px;
+        font-weight: 800;
+        padding: 0 8px 10px;
+      }
+      .reco-card {
+        background: #fff;
+        border: 1px solid #eff3f4;
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .reco-card:hover {
+        background: #f7f9f9;
+      }
+      .reco-card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+      .reco-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #cfd9de;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: #536471;
+        flex-shrink: 0;
+      }
+      .reco-author {
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .reco-revisit {
+        font-size: 11px;
+        color: #536471;
+        margin-left: auto;
+      }
+      .reco-preview {
+        font-size: 13px;
+        color: #536471;
+        line-height: 1.4;
+      }
+
+      /* Modals */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-overlay.open {
+        display: flex;
+      }
+      .modal-box {
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        width: 90%;
+        max-width: 420px;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .modal-title {
+        font-size: 18px;
+        font-weight: 800;
+      }
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
+        color: #536471;
+        line-height: 1;
+      }
+      .modal-close:hover {
+        color: #0f1419;
+      }
+      .report-reason-btn {
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        border-top: 1px solid #eff3f4;
+        padding: 14px 8px;
+        font-size: 15px;
+        cursor: pointer;
+        transition: background 0.15s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .report-reason-btn:first-child {
+        border-top: none;
+      }
+      .report-reason-btn:hover {
+        background: #f7f9f9;
+      }
+      .report-thanks {
+        display: none;
+        text-align: center;
+        padding: 24px 8px;
+      }
+      .report-thanks .check {
+        font-size: 40px;
+        color: #00ba7c;
+        margin-bottom: 8px;
+      }
+      .report-thanks .msg {
+        font-size: 18px;
+        font-weight: 800;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading">Loading&hellip;</div>
+    <div id="error-msg"></div>
+
+    <div id="app">
+      <div id="feed-layout">
+        <div id="feed-root">
+          <div class="post-card">
+            <div class="post-header">
+              <div class="avatar" id="post-avatar"></div>
+              <div>
+                <div class="post-author-name" id="post-name"></div>
+                <div class="post-author-handle" id="post-handle"></div>
+              </div>
+              <span class="post-time">2h</span>
+            </div>
+            <div class="post-title" id="post-title"></div>
+            <div id="stim-media"></div>
+            <div class="action-bar">
+              <button class="action-btn" id="btn-like">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"
+                  />
+                  <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                </svg>
+                <span id="like-label">Like</span>
+              </button>
+              <button class="action-btn" id="btn-reply">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  />
+                </svg>
+                Reply
+              </button>
+              <button class="action-btn" id="btn-repost">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path d="M17 1l4 4-4 4" />
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                  <path d="M7 23l-4-4 4-4" />
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+                <span id="repost-label">Repost</span>
+              </button>
+              <button class="action-btn" id="btn-report">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+                  />
+                  <line x1="4" x2="4" y1="22" y2="15" />
+                </svg>
+                Report
+              </button>
+            </div>
+            <div class="reply-box">
+              <div
+                class="avatar"
+                style="width: 34px; height: 34px; font-size: 13px"
+              >
+                Y
+              </div>
+              <textarea
+                id="post-reply-input"
+                placeholder="Post your reply"
+                rows="1"
+              ></textarea>
+              <button class="send-btn" id="post-reply-send">Reply</button>
+            </div>
+          </div>
+          <div class="comment-section">
+            <div class="comment-section-title">Comments</div>
+            <div id="comment-list"></div>
+            <button class="view-more-btn" id="view-more-btn">
+              View more comments
+            </button>
+          </div>
+        </div>
+
+        <div id="sidebar">
+          <div class="sidebar-heading">Recommended</div>
+          <div id="reco-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="report-modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span class="modal-title">Report</span>
+          <button class="modal-close" id="report-close">&times;</button>
+        </div>
+        <div id="report-body">
+          <p style="font-size: 14px; color: #536471; margin-bottom: 8px">
+            Choose the reason that best describes the issue.
+          </p>
+          <div id="report-reasons"></div>
+        </div>
+        <div class="report-thanks" id="report-thanks">
+          <div class="check">&#10003;</div>
+          <div class="msg">Thanks for reporting this</div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+      // ---- CONFIG ----
+      var SUPABASE_URL = "https://kduahomjytwviokyvqvp.supabase.co";
+      var SUPABASE_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdWFob21qeXR3dmlva3l2cXZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MDkzNTIsImV4cCI6MjA5NzE4NTM1Mn0.ZwRemPh4GPsEE_lioue8e5uxHotjfMzXJdOjN1373dc";
+      var CONTINUE_DELAY_MS = 60 * 1000;
+      var INITIAL_COMMENTS = 2;
+      var COMMENTS_PER_LOAD = 2;
+      var RECO_COUNT = 5;
+
+      var REPORT_REASONS = [
+        { id: "spam_misleading", label: "Spam or misleading" },
+        { id: "hate_harassment", label: "Hate speech or harassment" },
+        { id: "abusive_language", label: "Abusive or harmful language" },
+        { id: "violent_content", label: "Threatening or violent content" },
+        { id: "other", label: "Other" },
+      ];
+
+      // ---- ICON SVG STRINGS ----
+      var SVG_LIKE =
+        '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"></path><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>';
+      var SVG_REPLY =
+        '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+      var SVG_REPOST =
+        '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>';
+      var SVG_REPORT =
+        '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>';
+
+      // ---- INIT ----
+      var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      var params = new URLSearchParams(window.location.search);
+      var PID = params.get("pid") || "test_" + Date.now();
+      var GROUP = params.get("group") || "A1";
+
+      // ---- STATE ----
+      var currentItem = null;
+      var allComments = [];
+      var recoItems = [];
+      var allItemsCache = []; // loaded once; filtered in memory per navigation
+      var condition = null;
+
+      // Navigation tracking
+      var viewedItemIds = new Set();
+      var navigationHistory = [];
+      var viewOrder = 0;
+      var sessionStartedAt = null;
+      var currentItemViewedAt = null;
+      var itemViewsBuffer = []; // flushed as a batch on Continue after session row is created
+
+      // Per-item UI state (reset on each navigation)
+      var visibleCount = INITIAL_COMMENTS;
+      var expansionIdx = 0;
+      var recoClickOrder = 0;
+      var postLiked = false;
+      var postReposted = false;
+      var postReplyCount = 0;
+      var commentStates = {};
+      var renderedCmtIds = new Set();
+      var reportTarget = null;
+      var pendingWrites = [];
+
+      // ---- WRITE QUEUE ----
+      function queueWrite(table, data) {
+        pendingWrites.push({ table: table, data: data });
+      }
+
+      async function flushWrites() {
+        if (!pendingWrites.length) return;
+        var batch = pendingWrites.splice(0);
+        var byTable = {};
+        batch.forEach(function (item) {
+          if (!byTable[item.table]) byTable[item.table] = [];
+          byTable[item.table].push(item.data);
+        });
+        for (var table in byTable) {
+          var rows = byTable[table];
+          var result = await db.from(table).insert(rows);
+          if (result.error) {
+            console.error("[flush]", table, result.error.message);
+            rows.forEach(function (d) {
+              pendingWrites.push({ table: table, data: d });
+            });
+          }
+        }
+      }
+
+      // ---- SHARED UI HELPERS (ported from original design) ----
+      function mkAction(icon) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.style.cssText =
+          "background:none; border:none; cursor:pointer; color:inherit; display:flex; align-items:center; gap:6px; font-size:13px; padding:6px; margin:-6px; border-radius:999px; transition:background-color .16s ease, color .16s ease, transform .08s ease;";
+        b.innerHTML = '<span class="ico">' + icon + "</span>";
+        addButtonFeedback(b);
+        return b;
+      }
+
+      function mkActionText(label) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.style.cssText =
+          "background:none; border:none; cursor:pointer; color:#536471; font-size:13px; padding:4px 6px; margin:-4px -6px; border-radius:999px; font-family:inherit; transition:background-color .16s ease, color .16s ease, transform .08s ease;";
+        b.textContent = label;
+        addButtonFeedback(b);
+        return b;
+      }
+
+      function addButtonFeedback(el) {
+        var activeBg = "rgba(15,20,25,.06)";
+        el.addEventListener("mouseenter", function () {
+          el.style.background = activeBg;
+        });
+        el.addEventListener("mouseleave", function () {
+          el.style.background = "none";
+          el.style.transform = "scale(1)";
+        });
+        el.addEventListener("mousedown", function () {
+          el.style.transform = "scale(.96)";
+        });
+        el.addEventListener("mouseup", function () {
+          el.style.transform = "scale(1)";
+        });
+      }
+
+      function styleTextarea(ta) {
+        ta.style.transition =
+          "border-color .16s ease, box-shadow .16s ease, min-height .16s ease";
+        ta.addEventListener("focus", function () {
+          ta.style.borderColor = "#1d9bf0";
+          ta.style.boxShadow = "0 0 0 2px rgba(29,155,240,.18)";
+        });
+        ta.addEventListener("blur", function () {
+          ta.style.borderColor = "#cfd9de";
+          ta.style.boxShadow = "none";
+        });
+      }
+
+      function stylePrimaryButton(btn) {
+        btn.style.transition =
+          "background-color .16s ease, transform .08s ease";
+        btn.addEventListener("mouseenter", function () {
+          btn.style.background = "#272c30";
+        });
+        btn.addEventListener("mouseleave", function () {
+          btn.style.background = "#0f1419";
+          btn.style.transform = "scale(1)";
+        });
+        btn.addEventListener("mousedown", function () {
+          btn.style.transform = "scale(.97)";
+        });
+        btn.addEventListener("mouseup", function () {
+          btn.style.transform = "scale(1)";
+        });
+      }
+
+      function animateReplyBox(box) {
+        box.style.opacity = "0";
+        box.style.transform = "translateY(-4px)";
+        box.style.transition = "opacity .16s ease, transform .16s ease";
+        setTimeout(function () {
+          box.style.opacity = "1";
+          box.style.transform = "translateY(0)";
+        }, 0);
+      }
+
+      function addDismissOnOutside(box, textarea, onDismiss) {
+        setTimeout(function () {
+          document.addEventListener("mousedown", handleOutside);
+        }, 0);
+        function handleOutside(e) {
+          if (!box.parentNode) {
+            document.removeEventListener("mousedown", handleOutside);
+            return;
+          }
+          if (box.contains(e.target)) return;
+          if (textarea.value.trim()) return;
+          document.removeEventListener("mousedown", handleOutside);
+          onDismiss();
+        }
+      }
+
+      // ---- DATA LOADING ----
+      async function init() {
+        var grpRes = await db
+          .from("groups")
+          .select("stance, format")
+          .eq("group_code", GROUP)
+          .single();
+        if (grpRes.error || !grpRes.data) {
+          showError(
+            "Could not load study configuration. Please contact the researcher.",
+          );
+          return;
+        }
+        condition = grpRes.data.format;
+        var stance = grpRes.data.stance;
+
+        // Load all same-stance items once; shuffle to pick starting item randomly
+        var itemsRes = await db.from("items").select("*").eq("stance", stance);
+        if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
+          showError(
+            "Could not load study content. Please contact the researcher.",
+          );
+          return;
+        }
+        allItemsCache = itemsRes.data;
+        var pool = shuffle(allItemsCache.slice());
+        currentItem = pool[0];
+
+        var cmtRes = await db
+          .from("comments")
+          .select("*")
+          .eq("item_id", currentItem.id)
+          .order("display_order");
+        allComments = cmtRes.data || [];
+        allComments.forEach(function (c) {
+          commentStates[c.id] = {
+            liked: false,
+            reposted: false,
+            replyCount: 0,
+          };
+        });
+
+        loadRecos();
+
+        // Upsert participant — may already exist if they completed phase1
+        await db
+          .from("participants")
+          .upsert(
+            {
+              pid: PID,
+              group_code: GROUP,
+              main_item_id: currentItem.id,
+              condition: condition,
+            },
+            { onConflict: "pid", ignoreDuplicates: true },
+          );
+
+        sessionStartedAt = new Date().toISOString();
+        currentItemViewedAt = sessionStartedAt;
+        viewedItemIds.add(currentItem.id);
+        navigationHistory.push(currentItem.id);
+        viewOrder = 1;
+
+        render();
+        wirePostBar();
+        startContinueTimer();
+        setInterval(flushWrites, 60000);
+      }
+
+      // Synchronous — filters allItemsCache in memory.
+      // Priority: unviewed same-stance → unviewed other stance → already-viewed (fallback for endless nav)
+      function loadRecos() {
+        var pool = allItemsCache.filter(function (i) {
+          return i.id !== currentItem.id;
+        });
+        var unviewedSame = pool.filter(function (i) {
+          return !viewedItemIds.has(i.id) && i.stance === currentItem.stance;
+        });
+        var unviewedOther = pool.filter(function (i) {
+          return !viewedItemIds.has(i.id) && i.stance !== currentItem.stance;
+        });
+        var fallback = pool.filter(function (i) {
+          return viewedItemIds.has(i.id);
+        });
+        recoItems = shuffle(unviewedSame)
+          .concat(shuffle(unviewedOther))
+          .concat(shuffle(fallback))
+          .slice(0, RECO_COUNT);
+      }
+
+      // ---- NAVIGATION ----
+      async function navigateTo(itemId) {
+        // Capture current item view BEFORE updating state
+        bufferItemView(new Date().toISOString());
+
+        document.getElementById("feed-root").style.opacity = "0.4";
+
+        var itemRes = await db
+          .from("items")
+          .select("*")
+          .eq("id", itemId)
+          .single();
+        if (itemRes.error || !itemRes.data) {
+          document.getElementById("feed-root").style.opacity = "1";
+          return;
+        }
+
+        currentItem = itemRes.data;
+        viewedItemIds.add(itemId);
+        navigationHistory.push(itemId);
+        viewOrder++;
+        currentItemViewedAt = new Date().toISOString();
+
+        var cmtRes = await db
+          .from("comments")
+          .select("*")
+          .eq("item_id", itemId)
+          .order("display_order");
+        allComments = cmtRes.data || [];
+
+        // Reset per-item state
+        commentStates = {};
+        allComments.forEach(function (c) {
+          commentStates[c.id] = {
+            liked: false,
+            reposted: false,
+            replyCount: 0,
+          };
+        });
+        renderedCmtIds = new Set();
+        visibleCount = INITIAL_COMMENTS;
+        expansionIdx = 0;
+        postLiked = false;
+        postReposted = false;
+        postReplyCount = 0;
+        reportTarget = null;
+
+        loadRecos();
+        clearFeedDOM();
+        render();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        document.getElementById("feed-root").style.opacity = "1";
+      }
+
+      // Reset DOM and static button state for a new item
+      function clearFeedDOM() {
+        document.getElementById("comment-list").innerHTML = "";
+        var ta = document.getElementById("post-reply-input");
+        var send = document.getElementById("post-reply-send");
+        ta.value = "";
+        ta.style.height = "auto";
+        ta.style.minHeight = "38px";
+        send.style.display = "none";
+        document.getElementById("btn-like").style.color = "#536471";
+        document.getElementById("like-label").textContent = "Like";
+        document.getElementById("btn-repost").style.color = "#536471";
+        document.getElementById("repost-label").textContent = "Repost";
+        document.getElementById("btn-report").style.color = "#536471";
+      }
+
+      // Buffer a completed item view; session_id is filled in bulk on Continue
+      function bufferItemView(leftAt) {
+        itemViewsBuffer.push({
+          pid: PID,
+          session_type: "phase2",
+          item_id: currentItem.id,
+          view_order: viewOrder,
+          viewed_at: currentItemViewedAt,
+          left_at: leftAt,
+        });
+      }
+
+      // ---- RENDER ----
+      function render() {
+        renderPost();
+        renderComments();
+        renderSidebar();
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("app").style.display = "block";
+      }
+
+      function renderPost() {
+        var postUser = (currentItem.author || "user").replace(/^@/, "");
+        document.getElementById("post-avatar").textContent =
+          postUser[0].toUpperCase();
+        document.getElementById("post-name").textContent = "@" + postUser;
+        document.getElementById("post-handle").textContent = "";
+        document.getElementById("post-title").textContent =
+          currentItem.title && currentItem.title !== "nan"
+            ? currentItem.title
+            : "";
+        var media = document.getElementById("stim-media");
+        media.innerHTML = "";
+        if (condition === "video" && currentItem.video_url) {
+          var vid = youtubeId(currentItem.video_url);
+          if (vid) {
+            media.innerHTML =
+              '<iframe src="https://www.youtube.com/embed/' +
+              vid +
+              '?rel=0" allowfullscreen></iframe>';
+          } else {
+            media.innerHTML =
+              '<video src="' +
+              esc(currentItem.video_url) +
+              '" controls style="width:100%;display:block;border:none;max-height:560px;background:#000;"></video>';
+          }
+        } else if (currentItem.transcript) {
+          try {
+            var paras = JSON.parse(currentItem.transcript);
+            media.innerHTML =
+              '<div class="transcript-box">' +
+              (Array.isArray(paras) ? paras : [paras])
+                .map(function (p) {
+                  return '<p style="margin-bottom:10px">' + esc(p) + "</p>";
+                })
+                .join("") +
+              "</div>";
+          } catch (e) {
+            media.innerHTML =
+              '<div class="transcript-box">' +
+              esc(currentItem.transcript) +
+              "</div>";
+          }
+        }
+      }
+
+      // Incremental: only append comments not yet in DOM (preserves in-progress reply boxes)
+      function renderComments() {
+        var list = document.getElementById("comment-list");
+        allComments.slice(0, visibleCount).forEach(function (c) {
+          if (!renderedCmtIds.has(c.id)) {
+            renderedCmtIds.add(c.id);
+            list.appendChild(buildComment(c));
+          }
+        });
+        document.getElementById("view-more-btn").style.display =
+          visibleCount < allComments.length ? "block" : "none";
+      }
+
+      // ---- BUILD COMMENT (SVG buttons, no upvotes) ----
+      function buildComment(c) {
+        var st = commentStates[c.id];
+        var username = (c.author || "user").replace(/^@/, "");
+
+        var wrap = document.createElement("div");
+        wrap.style.cssText =
+          "padding:18px 16px 14px; border-top:1px solid #eff3f4;";
+
+        var topRow = document.createElement("div");
+        topRow.style.cssText = "display:flex; gap:10px;";
+
+        var avatar = document.createElement("div");
+        avatar.style.cssText =
+          "flex:0 0 36px; height:36px; border-radius:50%; background:#cfd9de; display:flex; align-items:center; justify-content:center; font-size:14px; color:#536471; font-weight:700; flex-shrink:0;";
+        avatar.textContent = username[0].toUpperCase();
+
+        var body = document.createElement("div");
+        body.style.cssText = "flex:1; min-width:0;";
+
+        var header = document.createElement("div");
+        header.style.cssText = "font-size:14px;";
+        header.innerHTML =
+          '<span style="font-weight:700; color:#0f1419;">@' +
+          esc(username) +
+          "</span>";
+
+        var textEl = document.createElement("div");
+        textEl.style.cssText =
+          "font-size:14px; color:#0f1419; margin:2px 0 8px; word-wrap:break-word;";
+        textEl.textContent = c.body;
+
+        var threadEl = document.createElement("div");
+
+        var actions = document.createElement("div");
+        actions.style.cssText =
+          "display:flex; justify-content:space-around; align-items:center; color:#536471; font-size:13px; padding:8px 0 2px;";
+
+        var likeBtn = mkAction(SVG_LIKE);
+        var replyBtn = mkAction(SVG_REPLY);
+        var repostBtn = mkAction(SVG_REPOST);
+        var reportBtn = mkAction(SVG_REPORT);
+
+        likeBtn.style.color = st.liked ? "#f91880" : "#536471";
+        repostBtn.style.color = st.reposted ? "#00ba7c" : "#536471";
+
+        likeBtn.addEventListener("click", function () {
+          st.liked = !st.liked;
+          likeBtn.style.color = st.liked ? "#f91880" : "#536471";
+          queueWrite("comment_likes", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            comment_id: c.id,
+            liked: st.liked,
+          });
+        });
+
+        repostBtn.addEventListener("click", function () {
+          st.reposted = !st.reposted;
+          repostBtn.style.color = st.reposted ? "#00ba7c" : "#536471";
+          queueWrite("comment_reposts", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            comment_id: c.id,
+            reposted: st.reposted,
+          });
+        });
+
+        replyBtn.addEventListener("click", function () {
+          if (body.querySelector(".reply-box-cmt")) {
+            body.querySelector(".reply-box-cmt textarea").focus();
+            return;
+          }
+          var box = document.createElement("div");
+          box.className = "reply-box-cmt";
+          box.style.cssText =
+            "margin-top:8px; display:flex; gap:6px; align-items:flex-start;";
+          var ta = document.createElement("textarea");
+          ta.placeholder = "Post your reply";
+          ta.rows = 1;
+          ta.style.cssText =
+            "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:8px; font-size:14px; font-family:inherit; resize:none; min-height:70px; box-sizing:border-box; overflow:hidden;";
+          styleTextarea(ta);
+          ta.addEventListener("focus", function () {
+            ta.style.minHeight = "70px";
+          });
+          ta.addEventListener("input", function () {
+            ta.style.height = "auto";
+            ta.style.height = ta.scrollHeight + "px";
+          });
+          var send = document.createElement("button");
+          send.type = "button";
+          send.textContent = "Reply";
+          send.style.cssText =
+            "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+          stylePrimaryButton(send);
+          send.addEventListener("click", function () {
+            var txt = ta.value.trim();
+            if (!txt) return;
+            st.replyCount++;
+            var replyObj = { index: st.replyCount, text: txt };
+            queueWrite("comment_replies", {
+              pid: PID,
+              session_type: "phase2",
+              item_id: currentItem.id,
+              comment_id: c.id,
+              body: txt,
+              reply_index: st.replyCount,
+            });
+            renderCommentReply(threadEl, replyObj, st, c.id);
+            box.remove();
+          });
+          box.appendChild(ta);
+          box.appendChild(send);
+          body.appendChild(box);
+          animateReplyBox(box);
+          addDismissOnOutside(box, ta, function () {
+            box.remove();
+          });
+          ta.focus();
+        });
+
+        reportBtn.addEventListener("click", function () {
+          reportTarget = { type: "comment", commentId: c.id, btn: reportBtn };
+          openReportModal();
+        });
+
+        actions.appendChild(likeBtn);
+        actions.appendChild(replyBtn);
+        actions.appendChild(repostBtn);
+        actions.appendChild(reportBtn);
+        body.appendChild(header);
+        body.appendChild(textEl);
+        topRow.appendChild(avatar);
+        topRow.appendChild(body);
+        wrap.appendChild(topRow);
+        wrap.appendChild(actions);
+        threadEl.style.cssText = "padding-left: 46px;";
+        wrap.appendChild(threadEl);
+        return wrap;
+      }
+
+      // ---- RENDER USER REPLY ON COMMENT (flat X-style threading) ----
+      function renderCommentReply(container, replyObj, cmtState, commentId) {
+        var editing = false;
+        var liked = false,
+          reposted = false;
+
+        var wrap = document.createElement("div");
+        wrap.style.cssText =
+          "margin-top:14px; padding:10px 0 0 12px; border-left:2px solid #eff3f4;";
+
+        var topRow = document.createElement("div");
+        topRow.style.cssText = "display:flex; gap:8px;";
+
+        var avatar = document.createElement("div");
+        avatar.style.cssText =
+          "flex:0 0 28px; height:28px; border-radius:50%; background:#cfd9de; display:flex; align-items:center; justify-content:center; font-size:12px; color:#536471; font-weight:700; flex-shrink:0;";
+        avatar.textContent = "Y";
+
+        var body = document.createElement("div");
+        body.style.cssText = "flex:1; min-width:0;";
+
+        var header = document.createElement("div");
+        header.style.cssText = "font-size:13px;";
+        header.innerHTML =
+          '<span style="font-weight:700; color:#0f1419;">You</span> <span style="color:#536471;">@you</span>';
+
+        var textEl = document.createElement("div");
+        textEl.style.cssText =
+          "font-size:13px; color:#0f1419; margin:3px 0 0; word-wrap:break-word;";
+        textEl.textContent = replyObj.text;
+
+        var actions = document.createElement("div");
+        actions.style.cssText =
+          "display:flex; justify-content:space-around; align-items:center; color:#536471; font-size:13px; padding:7px 0 2px;";
+
+        var likeBtn = mkAction(SVG_LIKE);
+        var replyBtn = mkAction(SVG_REPLY);
+        var repostBtn = mkAction(SVG_REPOST);
+        var editBtn = mkActionText("Edit");
+        var deleteBtn = mkActionText("Delete");
+
+        likeBtn.addEventListener("click", function () {
+          liked = !liked;
+          likeBtn.style.color = liked ? "#f91880" : "#536471";
+          queueWrite("comment_reply_interactions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            comment_id: commentId,
+            reply_index: replyObj.index,
+            action_type: liked ? "like" : "unlike",
+          });
+        });
+
+        repostBtn.addEventListener("click", function () {
+          reposted = !reposted;
+          repostBtn.style.color = reposted ? "#00ba7c" : "#536471";
+          queueWrite("comment_reply_interactions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            comment_id: commentId,
+            reply_index: replyObj.index,
+            action_type: reposted ? "repost" : "unrepost",
+          });
+        });
+
+        replyBtn.addEventListener("click", function () {
+          if (body.querySelector(".reply-box-nested")) {
+            body.querySelector(".reply-box-nested textarea").focus();
+            return;
+          }
+          var box = document.createElement("div");
+          box.className = "reply-box-nested";
+          box.style.cssText =
+            "margin-top:6px; display:flex; gap:6px; align-items:flex-start;";
+          var ta = document.createElement("textarea");
+          ta.placeholder = "Post your reply";
+          ta.rows = 1;
+          ta.style.cssText =
+            "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:6px 8px; font-size:13px; font-family:inherit; resize:none; min-height:60px; box-sizing:border-box; overflow:hidden;";
+          styleTextarea(ta);
+          ta.addEventListener("input", function () {
+            ta.style.height = "auto";
+            ta.style.height = ta.scrollHeight + "px";
+          });
+          var send = document.createElement("button");
+          send.type = "button";
+          send.textContent = "Reply";
+          send.style.cssText =
+            "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+          stylePrimaryButton(send);
+          send.addEventListener("click", function () {
+            var t = ta.value.trim();
+            if (!t) return;
+            cmtState.replyCount++;
+            queueWrite("comment_replies", {
+              pid: PID,
+              session_type: "phase2",
+              item_id: currentItem.id,
+              comment_id: commentId,
+              body: t,
+              reply_index: cmtState.replyCount,
+            });
+            renderCommentReply(
+              container,
+              { index: cmtState.replyCount, text: t },
+              cmtState,
+              commentId,
+            );
+            box.remove();
+          });
+          box.appendChild(ta);
+          box.appendChild(send);
+          body.appendChild(box);
+          animateReplyBox(box);
+          addDismissOnOutside(box, ta, function () {
+            box.remove();
+          });
+          ta.focus();
+        });
+
+        editBtn.addEventListener("click", function () {
+          if (editing) return;
+          editing = true;
+          var editBox = document.createElement("div");
+          editBox.style.cssText =
+            "margin:2px 0 4px; display:flex; gap:6px; align-items:flex-start;";
+          var ta = document.createElement("textarea");
+          ta.value = replyObj.text;
+          ta.rows = 1;
+          ta.style.cssText =
+            "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:6px 8px; font-size:13px; font-family:inherit; resize:none; min-height:32px; box-sizing:border-box; overflow:hidden;";
+          ta.addEventListener("input", function () {
+            ta.style.height = "auto";
+            ta.style.height = ta.scrollHeight + "px";
+          });
+          var save = document.createElement("button");
+          save.type = "button";
+          save.textContent = "Save";
+          save.style.cssText =
+            "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+          save.addEventListener("click", function () {
+            var t = ta.value.trim();
+            if (!t) return;
+            queueWrite("comment_reply_interactions", {
+              pid: PID,
+              session_type: "phase2",
+              item_id: currentItem.id,
+              comment_id: commentId,
+              reply_index: replyObj.index,
+              action_type: "edit",
+              value: t,
+            });
+            replyObj.text = t;
+            textEl.textContent = t;
+            body.replaceChild(textEl, editBox);
+            editing = false;
+          });
+          editBox.appendChild(ta);
+          editBox.appendChild(save);
+          body.replaceChild(editBox, textEl);
+          ta.style.height = "auto";
+          ta.style.height = ta.scrollHeight + "px";
+          ta.focus();
+        });
+
+        deleteBtn.addEventListener("click", function () {
+          queueWrite("comment_reply_interactions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            comment_id: commentId,
+            reply_index: replyObj.index,
+            action_type: "delete",
+          });
+          wrap.remove();
+        });
+
+        actions.appendChild(likeBtn);
+        actions.appendChild(replyBtn);
+        actions.appendChild(repostBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+        body.appendChild(header);
+        body.appendChild(textEl);
+        topRow.appendChild(avatar);
+        topRow.appendChild(body);
+        wrap.appendChild(topRow);
+        wrap.appendChild(actions);
+        container.appendChild(wrap);
+        return wrap;
+      }
+
+      // ---- RENDER USER REPLY ON POST ----
+      function renderPostReply(container, replyObj, atTop) {
+        var editing = false;
+        var liked = false,
+          reposted = false;
+
+        var wrap = document.createElement("div");
+        wrap.style.cssText =
+          "padding:18px 16px 14px; border-top:1px solid #eff3f4;";
+
+        var topRow = document.createElement("div");
+        topRow.style.cssText = "display:flex; gap:10px;";
+
+        var avatar = document.createElement("div");
+        avatar.style.cssText =
+          "flex:0 0 36px; height:36px; border-radius:50%; background:#cfd9de; display:flex; align-items:center; justify-content:center; font-size:14px; color:#536471; font-weight:700; flex-shrink:0;";
+        avatar.textContent = "Y";
+
+        var body = document.createElement("div");
+        body.style.cssText = "flex:1; min-width:0;";
+
+        var header = document.createElement("div");
+        header.style.cssText = "font-size:14px;";
+        header.innerHTML =
+          '<span style="font-weight:700; color:#0f1419;">You</span> <span style="color:#536471;">@you</span>';
+
+        var textEl = document.createElement("div");
+        textEl.style.cssText =
+          "font-size:14px; color:#0f1419; margin:3px 0 0; word-wrap:break-word;";
+        textEl.textContent = replyObj.text;
+
+        var actions = document.createElement("div");
+        actions.style.cssText =
+          "display:flex; justify-content:space-around; align-items:center; color:#536471; font-size:13px; padding:8px 0 2px;";
+
+        var likeBtn = mkAction(SVG_LIKE);
+        var replyBtn = mkAction(SVG_REPLY);
+        var repostBtn = mkAction(SVG_REPOST);
+        var editBtn = mkActionText("Edit");
+        var deleteBtn = mkActionText("Delete");
+
+        likeBtn.addEventListener("click", function () {
+          liked = !liked;
+          likeBtn.style.color = liked ? "#f91880" : "#536471";
+          queueWrite("post_reply_interactions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            reply_index: replyObj.index,
+            action_type: liked ? "like" : "unlike",
+          });
+        });
+
+        repostBtn.addEventListener("click", function () {
+          reposted = !reposted;
+          repostBtn.style.color = reposted ? "#00ba7c" : "#536471";
+          queueWrite("post_reply_interactions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            reply_index: replyObj.index,
+            action_type: reposted ? "repost" : "unrepost",
+          });
+        });
+
+        replyBtn.addEventListener("click", function () {
+          if (body.querySelector(".reply-box-nested")) {
+            body.querySelector(".reply-box-nested textarea").focus();
+            return;
+          }
+          var box = document.createElement("div");
+          box.className = "reply-box-nested";
+          box.style.cssText =
+            "margin-top:8px; display:flex; gap:6px; align-items:flex-start;";
+          var ta = document.createElement("textarea");
+          ta.placeholder = "Post your reply";
+          ta.rows = 1;
+          ta.style.cssText =
+            "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:8px; font-size:14px; font-family:inherit; resize:none; min-height:70px; box-sizing:border-box; overflow:hidden;";
+          styleTextarea(ta);
+          ta.addEventListener("focus", function () {
+            ta.style.minHeight = "70px";
+          });
+          ta.addEventListener("input", function () {
+            ta.style.height = "auto";
+            ta.style.height = ta.scrollHeight + "px";
+          });
+          var send = document.createElement("button");
+          send.type = "button";
+          send.textContent = "Reply";
+          send.style.cssText =
+            "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+          stylePrimaryButton(send);
+          send.addEventListener("click", function () {
+            var t = ta.value.trim();
+            if (!t) return;
+            postReplyCount++;
+            queueWrite("post_replies", {
+              pid: PID,
+              session_type: "phase2",
+              item_id: currentItem.id,
+              body: t,
+              reply_index: postReplyCount,
+            });
+            renderPostSubReply(subThread, { index: postReplyCount, text: t });
+            box.remove();
+          });
+          box.appendChild(ta);
+          box.appendChild(send);
+          body.appendChild(box);
+          animateReplyBox(box);
+          addDismissOnOutside(box, ta, function () {
+            box.remove();
+          });
+          ta.focus();
+        });
+
+        editBtn.addEventListener("click", function () {
+          if (editing) return;
+          editing = true;
+          var editBox = document.createElement("div");
+          editBox.style.cssText =
+            "margin:2px 0 8px; display:flex; gap:6px; align-items:flex-start;";
+          var ta = document.createElement("textarea");
+          ta.value = replyObj.text;
+          ta.rows = 1;
+          ta.style.cssText =
+            "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:8px; font-size:14px; font-family:inherit; resize:none; min-height:38px; box-sizing:border-box; overflow:hidden;";
+          ta.addEventListener("input", function () {
+            ta.style.height = "auto";
+            ta.style.height = ta.scrollHeight + "px";
+          });
+          var save = document.createElement("button");
+          save.type = "button";
+          save.textContent = "Save";
+          save.style.cssText =
+            "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+          save.addEventListener("click", function () {
+            var t = ta.value.trim();
+            if (!t) return;
+            queueWrite("post_reply_interactions", {
+              pid: PID,
+              session_type: "phase2",
+              item_id: currentItem.id,
+              reply_index: replyObj.index,
+              action_type: "edit",
+              value: t,
+            });
+            replyObj.text = t;
+            textEl.textContent = t;
+            body.replaceChild(textEl, editBox);
+            editing = false;
+          });
+          editBox.appendChild(ta);
+          editBox.appendChild(save);
+          body.replaceChild(editBox, textEl);
+          ta.style.height = "auto";
+          ta.style.height = ta.scrollHeight + "px";
+          ta.focus();
+        });
+
+        deleteBtn.addEventListener("click", function () {
+          queueWrite("post_reply_interactions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            reply_index: replyObj.index,
+            action_type: "delete",
+          });
+          wrap.remove();
+        });
+
+        var subThread = document.createElement("div");
+
+        actions.appendChild(likeBtn);
+        actions.appendChild(replyBtn);
+        actions.appendChild(repostBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+        body.appendChild(header);
+        body.appendChild(textEl);
+        topRow.appendChild(avatar);
+        topRow.appendChild(body);
+        wrap.appendChild(topRow);
+        wrap.appendChild(actions);
+        subThread.style.cssText = "padding-left: 46px;";
+        wrap.appendChild(subThread);
+        if (atTop && container.firstChild)
+          container.insertBefore(wrap, container.firstChild);
+        else container.appendChild(wrap);
+        return wrap;
+      }
+
+      // ---- RENDER SUB-REPLY ON POST REPLY (flat siblings, indented) ----
+      function renderPostSubReply(container, replyObj) {
+        var editing = false;
+        var liked = false,
+          reposted = false;
+
+        var wrap = document.createElement("div");
+        wrap.style.cssText =
+          "margin-top:14px; padding:10px 0 0 12px; border-left:2px solid #eff3f4;";
+
+        var topRow = document.createElement("div");
+        topRow.style.cssText = "display:flex; gap:8px;";
+
+        var avatar = document.createElement("div");
+        avatar.style.cssText =
+          "flex:0 0 28px; height:28px; border-radius:50%; background:#cfd9de; display:flex; align-items:center; justify-content:center; font-size:12px; color:#536471; font-weight:700; flex-shrink:0;";
+        avatar.textContent = "Y";
+
+        var body = document.createElement("div");
+        body.style.cssText = "flex:1; min-width:0;";
+
+        var header = document.createElement("div");
+        header.style.cssText = "font-size:13px;";
+        header.innerHTML =
+          '<span style="font-weight:700; color:#0f1419;">You</span> <span style="color:#536471;">@you</span>';
+
+        var textEl = document.createElement("div");
+        textEl.style.cssText =
+          "font-size:13px; color:#0f1419; margin:3px 0 0; word-wrap:break-word;";
+        textEl.textContent = replyObj.text;
+
+        var actions = document.createElement("div");
+        actions.style.cssText =
+          "display:flex; justify-content:space-around; align-items:center; color:#536471; font-size:13px; padding:7px 0 2px;";
+
+        var likeBtn = mkAction(SVG_LIKE);
+        var replyBtn = mkAction(SVG_REPLY);
+        var repostBtn = mkAction(SVG_REPOST);
+        var editBtn = mkActionText("Edit");
+        var deleteBtn = mkActionText("Delete");
+
+        likeBtn.addEventListener("click", function () {
+          liked = !liked;
+          likeBtn.style.color = liked ? "#f91880" : "#536471";
+          queueWrite("post_reply_interactions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            reply_index: replyObj.index,
+            action_type: liked ? "like" : "unlike",
+          });
+        });
+
+        repostBtn.addEventListener("click", function () {
+          reposted = !reposted;
+          repostBtn.style.color = reposted ? "#00ba7c" : "#536471";
+          queueWrite("post_reply_interactions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            reply_index: replyObj.index,
+            action_type: reposted ? "repost" : "unrepost",
+          });
+        });
+
+        replyBtn.addEventListener("click", function () {
+          if (body.querySelector(".reply-box-nested")) {
+            body.querySelector(".reply-box-nested textarea").focus();
+            return;
+          }
+          var box = document.createElement("div");
+          box.className = "reply-box-nested";
+          box.style.cssText =
+            "margin-top:6px; display:flex; gap:6px; align-items:flex-start;";
+          var ta = document.createElement("textarea");
+          ta.placeholder = "Post your reply";
+          ta.rows = 1;
+          ta.style.cssText =
+            "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:6px 8px; font-size:13px; font-family:inherit; resize:none; min-height:60px; box-sizing:border-box; overflow:hidden;";
+          styleTextarea(ta);
+          ta.addEventListener("input", function () {
+            ta.style.height = "auto";
+            ta.style.height = ta.scrollHeight + "px";
+          });
+          var send = document.createElement("button");
+          send.type = "button";
+          send.textContent = "Reply";
+          send.style.cssText =
+            "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+          stylePrimaryButton(send);
+          send.addEventListener("click", function () {
+            var t = ta.value.trim();
+            if (!t) return;
+            postReplyCount++;
+            queueWrite("post_replies", {
+              pid: PID,
+              session_type: "phase2",
+              item_id: currentItem.id,
+              body: t,
+              reply_index: postReplyCount,
+            });
+            renderPostSubReply(container, { index: postReplyCount, text: t });
+            box.remove();
+          });
+          box.appendChild(ta);
+          box.appendChild(send);
+          body.appendChild(box);
+          animateReplyBox(box);
+          addDismissOnOutside(box, ta, function () {
+            box.remove();
+          });
+          ta.focus();
+        });
+
+        editBtn.addEventListener("click", function () {
+          if (editing) return;
+          editing = true;
+          var editBox = document.createElement("div");
+          editBox.style.cssText =
+            "margin:2px 0 4px; display:flex; gap:6px; align-items:flex-start;";
+          var ta = document.createElement("textarea");
+          ta.value = replyObj.text;
+          ta.rows = 1;
+          ta.style.cssText =
+            "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:6px 8px; font-size:13px; font-family:inherit; resize:none; min-height:32px; box-sizing:border-box; overflow:hidden;";
+          ta.addEventListener("input", function () {
+            ta.style.height = "auto";
+            ta.style.height = ta.scrollHeight + "px";
+          });
+          var save = document.createElement("button");
+          save.type = "button";
+          save.textContent = "Save";
+          save.style.cssText =
+            "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+          save.addEventListener("click", function () {
+            var t = ta.value.trim();
+            if (!t) return;
+            queueWrite("post_reply_interactions", {
+              pid: PID,
+              session_type: "phase2",
+              item_id: currentItem.id,
+              reply_index: replyObj.index,
+              action_type: "edit",
+              value: t,
+            });
+            replyObj.text = t;
+            textEl.textContent = t;
+            body.replaceChild(textEl, editBox);
+            editing = false;
+          });
+          editBox.appendChild(ta);
+          editBox.appendChild(save);
+          body.replaceChild(editBox, textEl);
+          ta.style.height = "auto";
+          ta.style.height = ta.scrollHeight + "px";
+          ta.focus();
+        });
+
+        deleteBtn.addEventListener("click", function () {
+          queueWrite("post_reply_interactions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            reply_index: replyObj.index,
+            action_type: "delete",
+          });
+          wrap.remove();
+        });
+
+        actions.appendChild(likeBtn);
+        actions.appendChild(replyBtn);
+        actions.appendChild(repostBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+        body.appendChild(header);
+        body.appendChild(textEl);
+        topRow.appendChild(avatar);
+        topRow.appendChild(body);
+        wrap.appendChild(topRow);
+        wrap.appendChild(actions);
+        container.appendChild(wrap);
+        return wrap;
+      }
+
+      function recoPreview(item) {
+        if (item.title && item.title !== "nan")
+          return item.title.length > 90
+            ? item.title.slice(0, 90) + "…"
+            : item.title;
+        if (item.transcript) {
+          try {
+            var paras = JSON.parse(item.transcript);
+            var text = (Array.isArray(paras) ? paras[0] : String(paras)) || "";
+            return text.length > 90 ? text.slice(0, 90) + "…" : text;
+          } catch (e) {}
+        }
+        return "";
+      }
+
+      // ---- SIDEBAR (clicking navigates to that item) ----
+      function renderSidebar() {
+        var list = document.getElementById("reco-list");
+        list.innerHTML = "";
+        if (!recoItems.length) {
+          list.innerHTML =
+            '<p style="color:#536471;font-size:14px;padding:8px 0">No more recommendations.</p>';
+          return;
+        }
+        recoItems.forEach(function (item) {
+          var isViewed = viewedItemIds.has(item.id);
+          var card = document.createElement("div");
+          card.className = "reco-card";
+          var recoUser = (item.author || "?").replace(/^@/, "");
+          card.innerHTML =
+            '<div class="reco-card-header">' +
+            '<div class="reco-avatar">' +
+            esc(recoUser[0].toUpperCase()) +
+            "</div>" +
+            '<span class="reco-author">@' +
+            esc(recoUser) +
+            "</span>" +
+            (isViewed ? '<span class="reco-revisit">Revisit</span>' : "") +
+            "</div>" +
+            '<div class="reco-preview">' +
+            esc(recoPreview(item)) +
+            "</div>";
+          card.addEventListener("click", function () {
+            recoClickOrder++;
+            queueWrite("sidebar_clicks", {
+              pid: PID,
+              session_type: "phase2",
+              source_item_id: currentItem.id,
+              clicked_item_id: item.id,
+              click_order: recoClickOrder,
+            });
+            navigateTo(item.id);
+          });
+          list.appendChild(card);
+        });
+      }
+
+      // ---- POST BAR (micro-animations — called once at init, not on each render) ----
+      function wirePostBar() {
+        ["like", "reply", "repost", "report"].forEach(function (name) {
+          var btn = document.getElementById("btn-" + name);
+          if (!btn) return;
+          addButtonFeedback(btn);
+        });
+        styleTextarea(document.getElementById("post-reply-input"));
+        stylePrimaryButton(document.getElementById("post-reply-send"));
+      }
+
+      // ---- CONTINUE TIMER ----
+      var continueFired = false;
+      function startContinueTimer() {
+        setTimeout(handleContinue, CONTINUE_DELAY_MS);
+      }
+
+      // ---- POST BAR HANDLERS ----
+      function handlePostLike() {
+        postLiked = !postLiked;
+        document.getElementById("btn-like").style.color = postLiked
+          ? "#f91880"
+          : "#536471";
+        document.getElementById("like-label").textContent = postLiked
+          ? "Liked"
+          : "Like";
+        queueWrite("post_likes", {
+          pid: PID,
+          session_type: "phase2",
+          item_id: currentItem.id,
+          liked: postLiked,
+        });
+      }
+
+      function handlePostRepost() {
+        postReposted = !postReposted;
+        document.getElementById("btn-repost").style.color = postReposted
+          ? "#00ba7c"
+          : "#536471";
+        document.getElementById("repost-label").textContent = postReposted
+          ? "Reposted"
+          : "Repost";
+        queueWrite("post_reposts", {
+          pid: PID,
+          session_type: "phase2",
+          item_id: currentItem.id,
+          reposted: postReposted,
+        });
+      }
+
+      function handlePostReply() {
+        var ta = document.getElementById("post-reply-input");
+        var send = document.getElementById("post-reply-send");
+        var text = ta.value.trim();
+        if (!text) return;
+        postReplyCount++;
+        var replyObj = { index: postReplyCount, text: text };
+        queueWrite("post_replies", {
+          pid: PID,
+          session_type: "phase2",
+          item_id: currentItem.id,
+          body: text,
+          reply_index: postReplyCount,
+        });
+        renderPostReply(
+          document.getElementById("comment-list"),
+          replyObj,
+          true,
+        );
+        ta.value = "";
+        ta.style.height = "auto";
+        ta.style.minHeight = "38px";
+        send.style.display = "none";
+      }
+
+      // ---- VIEW MORE ----
+      document
+        .getElementById("view-more-btn")
+        .addEventListener("click", function () {
+          if (!currentItem) return;
+          expansionIdx++;
+          visibleCount = Math.min(
+            visibleCount + COMMENTS_PER_LOAD,
+            allComments.length,
+          );
+          queueWrite("comment_expansions", {
+            pid: PID,
+            session_type: "phase2",
+            item_id: currentItem.id,
+            expansion_index: expansionIdx,
+            comments_visible: visibleCount,
+          });
+          renderComments();
+        });
+
+      // ---- REPORT MODAL ----
+      function openReportModal() {
+        document.getElementById("report-body").style.display = "block";
+        document.getElementById("report-thanks").style.display = "none";
+        var list = document.getElementById("report-reasons");
+        list.innerHTML = "";
+        REPORT_REASONS.forEach(function (r) {
+          var btn = document.createElement("button");
+          btn.className = "report-reason-btn";
+          btn.innerHTML =
+            "<span>" +
+            esc(r.label) +
+            '</span><span style="color:#536471;">&rsaquo;</span>';
+          btn.addEventListener("click", function () {
+            if (reportTarget.type === "post") {
+              queueWrite("post_reports", {
+                pid: PID,
+                session_type: "phase2",
+                item_id: currentItem.id,
+                reason: r.id,
+              });
+            } else {
+              queueWrite("comment_reports", {
+                pid: PID,
+                session_type: "phase2",
+                item_id: currentItem.id,
+                comment_id: reportTarget.commentId,
+                reason: r.id,
+              });
+            }
+            if (reportTarget.btn) reportTarget.btn.style.color = "#f4212e";
+            document.getElementById("report-body").style.display = "none";
+            document.getElementById("report-thanks").style.display = "block";
+            setTimeout(closeReportModal, 1400);
+          });
+          list.appendChild(btn);
+        });
+        document.getElementById("report-modal").classList.add("open");
+      }
+      function closeReportModal() {
+        document.getElementById("report-modal").classList.remove("open");
+        reportTarget = null;
+      }
+
+      // ---- CONTINUE ----
+      async function handleContinue() {
+        if (continueFired) return;
+        continueFired = true;
+        var leftAt = new Date().toISOString();
+
+        bufferItemView(leftAt); // capture final item view
+        await flushWrites();
+
+        var sessResult = await db
+          .from("sessions")
+          .insert({
+            pid: PID,
+            session_type: "phase2",
+            navigation_history: navigationHistory,
+            started_at: sessionStartedAt,
+            completed_at: leftAt,
+          })
+          .select("id")
+          .single();
+
+        if (sessResult.data) {
+          var sessId = sessResult.data.id;
+          var viewRows = itemViewsBuffer.map(function (v) {
+            return Object.assign({}, v, { session_id: sessId });
+          });
+          await db.from("item_views").insert(viewRows);
+        }
+
+        window.parent.postMessage({ type: "phase2_complete", pid: PID }, "*");
+      }
+
+      // ---- STATIC LISTENERS ----
+      document
+        .getElementById("btn-like")
+        .addEventListener("click", handlePostLike);
+      document
+        .getElementById("btn-repost")
+        .addEventListener("click", handlePostRepost);
+      document
+        .getElementById("btn-report")
+        .addEventListener("click", function () {
+          reportTarget = {
+            type: "post",
+            commentId: null,
+            btn: document.getElementById("btn-report"),
+          };
+          openReportModal();
+        });
+      document
+        .getElementById("btn-reply")
+        .addEventListener("click", function () {
+          var ta = document.getElementById("post-reply-input");
+          var send = document.getElementById("post-reply-send");
+          ta.focus();
+          ta.style.minHeight = "70px";
+          send.style.display = "inline-block";
+        });
+
+      var postTa = document.getElementById("post-reply-input");
+      var postSend = document.getElementById("post-reply-send");
+      postTa.addEventListener("input", function () {
+        postSend.style.display = postTa.value.trim() ? "inline-block" : "none";
+        postTa.style.height = "auto";
+        postTa.style.height = postTa.scrollHeight + "px";
+      });
+      postSend.addEventListener("click", handlePostReply);
+
+      document
+        .getElementById("report-close")
+        .addEventListener("click", closeReportModal);
+      document
+        .getElementById("report-modal")
+        .addEventListener("click", function (e) {
+          if (e.target.id === "report-modal") closeReportModal();
+        });
+
+      // ---- UTILS ----
+      function esc(s) {
+        return String(s || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+      function youtubeId(url) {
+        var m = String(url).match(
+          /(?:youtu\.be\/|[?&]v=|embed\/)([A-Za-z0-9_-]{11})/,
+        );
+        return m ? m[1] : null;
+      }
+      function shuffle(arr) {
+        for (var i = arr.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = arr[i];
+          arr[i] = arr[j];
+          arr[j] = tmp;
+        }
+        return arr;
+      }
+      function showError(msg) {
+        document.getElementById("loading").style.display = "none";
+        var el = document.getElementById("error-msg");
+        el.textContent = msg;
+        el.style.display = "flex";
+      }
+
+      init();
+    </script>
+  </body>
+</html>
