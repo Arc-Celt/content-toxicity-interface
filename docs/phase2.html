@@ -194,22 +194,10 @@
       }
 
       function loadRecos() {
-        var pool = allItemsCache.filter(function (i) {
-          return i.id !== currentItem.id;
+        var unviewed = allItemsCache.filter(function (i) {
+          return i.id !== currentItem.id && !viewedItemIds.has(i.id);
         });
-        var unviewedSame = pool.filter(function (i) {
-          return !viewedItemIds.has(i.id) && i.stance === currentItem.stance;
-        });
-        var unviewedOther = pool.filter(function (i) {
-          return !viewedItemIds.has(i.id) && i.stance !== currentItem.stance;
-        });
-        var fallback = pool.filter(function (i) {
-          return viewedItemIds.has(i.id);
-        });
-        recoItems = shuffle(unviewedSame)
-          .concat(shuffle(unviewedOther))
-          .concat(shuffle(fallback))
-          .slice(0, RECO_COUNT);
+        recoItems = shuffle(unviewed).slice(0, RECO_COUNT);
       }
 
       async function navigateTo(itemId) {
@@ -287,11 +275,10 @@
         list.innerHTML = "";
         if (!recoItems.length) {
           list.innerHTML =
-            '<p style="color:#536471;font-size:14px;padding:8px 0">No more recommendations.</p>';
+            '<p style="color:#536471;font-size:14px;padding:8px 0">You\'ve explored all available posts.</p>';
           return;
         }
         recoItems.forEach(function (item) {
-          var isViewed = viewedItemIds.has(item.id);
           var card = document.createElement("div");
           card.className = "reco-card";
           var recoUser = (item.author || "?").replace(/^@/, "");
@@ -299,7 +286,6 @@
             '<div class="reco-card-header">' +
             '<div class="reco-avatar">' + esc(recoUser[0].toUpperCase()) + "</div>" +
             '<span class="reco-author">@' + esc(recoUser) + "</span>" +
-            (isViewed ? '<span class="reco-revisit">Revisit</span>' : "") +
             "</div>" +
             '<div class="reco-preview">' + esc(recoPreview(item)) + "</div>";
           card.addEventListener("click", function () {
