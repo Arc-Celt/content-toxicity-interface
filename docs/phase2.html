@@ -121,14 +121,43 @@
         condition = grpRes.data.format;
         var stance = grpRes.data.stance;
 
-        var itemsRes = await db.from("items").select("*").eq("stance", stance);
+        // Fetch items + phase1 context in parallel
+        var results = await Promise.all([
+          db.from("items").select("*").eq("stance", stance),
+          db.from("participants").select("main_item_id").eq("pid", PID).maybeSingle(),
+          db.from("sidebar_clicks")
+            .select("clicked_item_id")
+            .eq("pid", PID)
+            .eq("session_type", "phase1")
+            .order("click_order", { ascending: true })
+            .limit(1)
+            .maybeSingle()
+        ]);
+        var itemsRes = results[0];
+        var participantRes = results[1];
+        var clickRes = results[2];
+
         if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
           showError("Could not load study content. Please contact the researcher.");
           return;
         }
         allItemsCache = itemsRes.data;
+
+        // Mark phase1 main stimulus as already viewed so it won't appear in recos
+        if (participantRes.data && participantRes.data.main_item_id) {
+          viewedItemIds.add(participantRes.data.main_item_id);
+        }
+
+        // Starting item: first sidebar click from phase1 → else first unviewed → else any
         var pool = shuffle(allItemsCache.slice());
-        currentItem = pool[0];
+        var firstClickId = clickRes.data && clickRes.data.clicked_item_id;
+        if (firstClickId) {
+          currentItem = allItemsCache.find(function (i) { return i.id === firstClickId; })
+            || pool.find(function (i) { return !viewedItemIds.has(i.id); })
+            || pool[0];
+        } else {
+          currentItem = pool.find(function (i) { return !viewedItemIds.has(i.id); }) || pool[0];
+        }
 
         var cmtRes = await db
           .from("comments")
