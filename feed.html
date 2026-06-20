@@ -732,7 +732,7 @@
 
         loadRecos();
 
-        // Upsert participant — may already exist if they completed phase1
+        // Upsert participant 鈥?may already exist if they completed phase1
         await db
           .from("participants")
           .upsert(
@@ -757,8 +757,8 @@
         setInterval(flushWrites, 60000);
       }
 
-      // Synchronous — filters allItemsCache in memory.
-      // Priority: unviewed same-stance → unviewed other stance → already-viewed (fallback for endless nav)
+      // Synchronous 鈥?filters allItemsCache in memory.
+      // Priority: unviewed same-stance 鈫?unviewed other stance 鈫?already-viewed (fallback for endless nav)
       function loadRecos() {
         var pool = allItemsCache.filter(function (i) {
           return i.id !== currentItem.id;
@@ -1646,13 +1646,13 @@
       function recoPreview(item) {
         if (item.title && item.title !== "nan")
           return item.title.length > 90
-            ? item.title.slice(0, 90) + "…"
+            ? item.title.slice(0, 90) + "鈥?
             : item.title;
         if (item.transcript) {
           try {
             var paras = JSON.parse(item.transcript);
             var text = (Array.isArray(paras) ? paras[0] : String(paras)) || "";
-            return text.length > 90 ? text.slice(0, 90) + "…" : text;
+            return text.length > 90 ? text.slice(0, 90) + "鈥? : text;
           } catch (e) {}
         }
         return "";
@@ -1700,7 +1700,7 @@
         });
       }
 
-      // ---- POST BAR (micro-animations — called once at init, not on each render) ----
+      // ---- POST BAR (micro-animations 鈥?called once at init, not on each render) ----
       function wirePostBar() {
         ["like", "reply", "repost", "report"].forEach(function (name) {
           var btn = document.getElementById("btn-" + name);
@@ -1868,7 +1868,7 @@
           await db.from("item_views").insert(viewRows);
         }
 
-        window.parent.postMessage({ type: "phase2_complete", pid: PID }, "*");
+        
       }
 
       // ---- STATIC LISTENERS ----

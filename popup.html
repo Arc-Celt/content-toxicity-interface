@@ -1545,13 +1545,13 @@
       function recoPreview(item) {
         if (item.title && item.title !== "nan")
           return item.title.length > 90
-            ? item.title.slice(0, 90) + "鈥?
+            ? item.title.slice(0, 90) + "閳?
             : item.title;
         if (item.transcript) {
           try {
             var paras = JSON.parse(item.transcript);
             var text = (Array.isArray(paras) ? paras[0] : String(paras)) || "";
-            return text.length > 90 ? text.slice(0, 90) + "鈥? : text;
+            return text.length > 90 ? text.slice(0, 90) + "閳? : text;
           } catch (e) {}
         }
         return "";
@@ -1765,7 +1765,7 @@
             left_at: leftAt,
           });
         }
-        window.parent.postMessage({ type: "phase1_complete", pid: PID }, "*");
+        
       }
 
       // ---- STATIC LISTENERS ----

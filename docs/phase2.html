@@ -316,7 +316,6 @@
           await db.from("item_views").insert(viewRows);
         }
 
-        window.parent.postMessage({ type: "phase2_complete", pid: PID }, "*");
       }
 
       init();
