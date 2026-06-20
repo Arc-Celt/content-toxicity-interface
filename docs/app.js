@@ -50,27 +50,15 @@ var continueFired = false;
 
 // ---- WRITE QUEUE ----
 function queueWrite(table, data) {
-  pendingWrites.push({ table: table, data: data });
+  db.from(table).insert(data).then(function (result) {
+    if (result.error) {
+      console.error("[write]", table, result.error.message);
+    }
+  });
 }
 
 async function flushWrites() {
-  if (!pendingWrites.length) return;
-  var batch = pendingWrites.splice(0);
-  var byTable = {};
-  batch.forEach(function (item) {
-    if (!byTable[item.table]) byTable[item.table] = [];
-    byTable[item.table].push(item.data);
-  });
-  for (var table in byTable) {
-    var rows = byTable[table];
-    var result = await db.from(table).insert(rows);
-    if (result.error) {
-      console.error("[flush]", table, result.error.message);
-      rows.forEach(function (d) {
-        pendingWrites.push({ table: table, data: d });
-      });
-    }
-  }
+  // no-op: all writes are now immediate. kept so handleContinue calls still work.
 }
 
 // ---- UI HELPERS ----
