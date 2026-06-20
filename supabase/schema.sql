@@ -27,11 +27,11 @@ create table comments (
   primary key (id, item_id)
 );
 
--- maps group code (e.g. 'A1') → main item + media condition
+-- maps group code → stance + format (item is randomly assigned at runtime)
 create table groups (
   group_code  text primary key,
-  item_id     text not null references items(id),
-  condition   text not null check (condition in ('video', 'transcript'))
+  stance      text not null check (stance in ('pro_immigration', 'anti_immigration')),
+  format      text not null check (format in ('video', 'transcript'))
 );
 
 

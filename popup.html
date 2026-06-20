@@ -15,7 +15,7 @@ body {
   min-height: 100vh; font-size: 16px; color: #536471;
 }
 #error-msg { color: #f4212e; display: none; }
-#app { max-width: 920px; margin: 0 auto; padding: 20px 16px 100px; display: none; }
+#app { max-width: 920px; margin: 0 auto; padding: 20px 16px 40px; display: none; }
 #feed-layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
 
 /* Main column */
@@ -98,20 +98,6 @@ body {
 .reco-author { font-size: 13px; font-weight: 700; }
 .reco-preview { font-size: 13px; color: #536471; line-height: 1.4; }
 
-/* Continue bar */
-#continue-bar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: rgba(255,255,255,.95); backdrop-filter: blur(8px);
-  border-top: 1px solid #eff3f4; padding: 12px 24px;
-  display: flex; align-items: center; justify-content: flex-end; gap: 16px; z-index: 100;
-}
-#continue-timer { font-size: 13px; color: #536471; }
-#continue-btn {
-  background: #0f1419; color: #fff; border: none; border-radius: 20px;
-  padding: 10px 28px; font-size: 15px; font-weight: 700; cursor: pointer;
-  transition: background-color .16s ease, transform .08s ease;
-}
-#continue-btn:disabled { background: #cfd9de; cursor: not-allowed; }
 
 /* Modals */
 .modal-overlay {
@@ -199,10 +185,6 @@ body {
   </div>
 </div>
 
-<div id="continue-bar">
-  <span id="continue-timer"></span>
-  <button id="continue-btn" disabled>Continue &#8594;</button>
-</div>
 
 <div class="modal-overlay" id="report-modal">
   <div class="modal-box">
@@ -245,7 +227,7 @@ body {
 var SUPABASE_URL      = 'https://kduahomjytwviokyvqvp.supabase.co';
 var SUPABASE_KEY      = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdWFob21qeXR3dmlva3l2cXZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MDkzNTIsImV4cCI6MjA5NzE4NTM1Mn0.ZwRemPh4GPsEE_lioue8e5uxHotjfMzXJdOjN1373dc';
 var CONTINUE_DELAY_MS = 45 * 1000;
-var INITIAL_COMMENTS  = 3;
+var INITIAL_COMMENTS  = 2;
 var COMMENTS_PER_LOAD = 2;
 var RECO_COUNT        = 10;
 
@@ -384,24 +366,23 @@ function addDismissOnOutside(box, textarea, onDismiss) {
 
 // ---- DATA LOADING ----
 async function init() {
-  var grpRes = await db.from('groups').select('item_id, condition').eq('group_code', GROUP).single();
+  var grpRes = await db.from('groups').select('stance, format').eq('group_code', GROUP).single();
   if (grpRes.error || !grpRes.data) { showError('Could not load study configuration. Please contact the researcher.'); return; }
-  condition = grpRes.data.condition;
+  condition = grpRes.data.format;
+  var stance = grpRes.data.stance;
 
-  var itemRes = await db.from('items').select('*').eq('id', grpRes.data.item_id).single();
-  if (itemRes.error || !itemRes.data) { showError('Could not load study content. Please contact the researcher.'); return; }
-  mainItem = itemRes.data;
+  // Randomly select one item from the stance pool; rest become sidebar recos
+  var itemsRes = await db.from('items').select('*').eq('stance', stance);
+  if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) { showError('Could not load study content. Please contact the researcher.'); return; }
+  var pool = shuffle(itemsRes.data);
+  mainItem  = pool[0];
+  recoItems = pool.slice(1, RECO_COUNT + 1);
 
   var cmtRes = await db.from('comments').select('*').eq('item_id', mainItem.id).order('display_order');
   allComments = cmtRes.data || [];
   allComments.forEach(function(c) {
     commentStates[c.id] = { liked: false, reposted: false, replyCount: 0 };
   });
-
-  var recoQ = db.from('items').select('id, title, author, transcript').neq('id', mainItem.id).limit(RECO_COUNT);
-  if (mainItem.stance) recoQ = recoQ.eq('stance', mainItem.stance);
-  var recoRes = await recoQ;
-  recoItems = shuffle(recoRes.data || []);
 
   await db.from('participants').insert({ pid: PID, group_code: GROUP, main_item_id: mainItem.id, condition: condition });
 
@@ -422,10 +403,11 @@ function render() {
 }
 
 function renderPost() {
-  document.getElementById('post-avatar').textContent = (mainItem.author || '?')[0].toUpperCase();
-  document.getElementById('post-name').textContent   = mainItem.author || 'Unknown';
-  document.getElementById('post-handle').textContent = '@' + (mainItem.author || 'user').toLowerCase().replace(/\s+/g, '_');
-  document.getElementById('post-title').textContent  = mainItem.title || '';
+  var postUser = (mainItem.author || 'user').replace(/^@/, '');
+  document.getElementById('post-avatar').textContent = postUser[0].toUpperCase();
+  document.getElementById('post-name').textContent   = '@' + postUser;
+  document.getElementById('post-handle').textContent = '';
+  document.getElementById('post-title').textContent  = (mainItem.title && mainItem.title !== 'nan') ? mainItem.title : '';
   var media = document.getElementById('stim-media');
   if (condition === 'video' && mainItem.video_url) {
     var vid = youtubeId(mainItem.video_url);
@@ -435,7 +417,12 @@ function renderPost() {
       media.innerHTML = '<video src="' + esc(mainItem.video_url) + '" controls style="width:100%;display:block;border:none;max-height:560px;background:#000;"></video>';
     }
   } else if (mainItem.transcript) {
-    media.innerHTML = '<div class="transcript-box">' + esc(mainItem.transcript) + '</div>';
+    try {
+      var paras = JSON.parse(mainItem.transcript);
+      media.innerHTML = '<div class="transcript-box">' + (Array.isArray(paras) ? paras : [paras]).map(function(p) { return '<p style="margin-bottom:10px">' + esc(p) + '</p>'; }).join('') + '</div>';
+    } catch(e) {
+      media.innerHTML = '<div class="transcript-box">' + esc(mainItem.transcript) + '</div>';
+    }
   }
 }
 
@@ -455,7 +442,7 @@ function renderComments() {
 // ---- BUILD COMMENT (original visual pattern: DOM creation, SVG buttons, no upvotes) ----
 function buildComment(c) {
   var st = commentStates[c.id];
-  var handle = '@' + (c.author || 'user').toLowerCase().replace(/\s+/g, '_');
+  var username = (c.author || 'user').replace(/^@/, '');
 
   var wrap = document.createElement('div');
   wrap.style.cssText = 'padding:18px 16px 14px; border-top:1px solid #eff3f4;';
@@ -466,16 +453,14 @@ function buildComment(c) {
   var avatar = document.createElement('div');
   avatar.style.cssText =
     'flex:0 0 36px; height:36px; border-radius:50%; background:#cfd9de; display:flex; align-items:center; justify-content:center; font-size:14px; color:#536471; font-weight:700; flex-shrink:0;';
-  avatar.textContent = (c.author || '?')[0].toUpperCase();
+  avatar.textContent = username[0].toUpperCase();
 
   var body = document.createElement('div');
   body.style.cssText = 'flex:1; min-width:0;';
 
   var header = document.createElement('div');
   header.style.cssText = 'font-size:14px;';
-  header.innerHTML =
-    '<span style="font-weight:700; color:#0f1419;">' + esc(c.author || 'Unknown') +
-    '</span> <span style="color:#536471;">' + esc(handle) + '</span>';
+  header.innerHTML = '<span style="font-weight:700; color:#0f1419;">@' + esc(username) + '</span>';
 
   var textEl = document.createElement('div');
   textEl.style.cssText = 'font-size:14px; color:#0f1419; margin:2px 0 8px; word-wrap:break-word;';
@@ -988,6 +973,18 @@ function renderPostSubReply(container, replyObj) {
   return wrap;
 }
 
+function recoPreview(item) {
+  if (item.title && item.title !== 'nan') return item.title.length > 90 ? item.title.slice(0, 90) + '…' : item.title;
+  if (item.transcript) {
+    try {
+      var paras = JSON.parse(item.transcript);
+      var text = (Array.isArray(paras) ? paras[0] : String(paras)) || '';
+      return text.length > 90 ? text.slice(0, 90) + '…' : text;
+    } catch(e) {}
+  }
+  return '';
+}
+
 // ---- SIDEBAR ----
 function renderSidebar() {
   var list = document.getElementById('reco-list');
@@ -995,14 +992,13 @@ function renderSidebar() {
   recoItems.forEach(function(item) {
     var card = document.createElement('div');
     card.className = 'reco-card';
-    var src     = item.transcript || item.title || '';
-    var preview = src.length > 90 ? src.slice(0, 90) + '…' : src;
+    var recoUser = (item.author || '?').replace(/^@/, '');
     card.innerHTML =
       '<div class="reco-card-header">' +
-        '<div class="reco-avatar">' + esc((item.author || '?')[0].toUpperCase()) + '</div>' +
-        '<span class="reco-author">' + esc(item.author || 'Unknown') + '</span>' +
+        '<div class="reco-avatar">' + esc(recoUser[0].toUpperCase()) + '</div>' +
+        '<span class="reco-author">@' + esc(recoUser) + '</span>' +
       '</div>' +
-      '<div class="reco-preview">' + esc(preview) + '</div>';
+      '<div class="reco-preview">' + esc(recoPreview(item)) + '</div>';
     card.addEventListener('click', function() { handleRecoClick(item.id); });
     list.appendChild(card);
   });
@@ -1017,18 +1013,12 @@ function wirePostBar() {
   });
   styleTextarea(document.getElementById('post-reply-input'));
   stylePrimaryButton(document.getElementById('post-reply-send'));
-  stylePrimaryButton(document.getElementById('continue-btn'));
 }
 
-// ---- CONTINUE TIMER ----
+// ---- CONTINUE TIMER (auto-saves + signals Qualtrics after delay) ----
+var continueFired = false;
 function startContinueTimer() {
-  var btn = document.getElementById('continue-btn');
-  var lbl = document.getElementById('continue-timer');
-  var sec = Math.ceil(CONTINUE_DELAY_MS / 1000);
-  (function tick() {
-    if (sec > 0) { lbl.textContent = 'Continue available in ' + sec + 's'; sec--; setTimeout(tick, 1000); }
-    else { lbl.textContent = ''; btn.disabled = false; }
-  })();
+  setTimeout(handleContinue, CONTINUE_DELAY_MS);
 }
 
 // ---- POST BAR HANDLERS ----
@@ -1108,11 +1098,10 @@ function handleRecoClick(itemId) {
 }
 function closeRecoModal() { document.getElementById('reco-modal').classList.remove('open'); }
 
-// ---- CONTINUE ----
+// ---- CONTINUE (auto-triggered after CONTINUE_DELAY_MS) ----
 async function handleContinue() {
-  var btn = document.getElementById('continue-btn');
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
+  if (continueFired) return;
+  continueFired = true;
   var leftAt = new Date().toISOString();
   await flushWrites();
   var sessResult = await db.from('sessions').insert({
@@ -1126,7 +1115,6 @@ async function handleContinue() {
       item_id: mainItem.id, view_order: 1, viewed_at: viewedAt, left_at: leftAt,
     });
   }
-  btn.textContent = 'Done ✓';
   window.parent.postMessage({ type: 'phase1_complete', pid: PID }, '*');
 }
 
@@ -1159,7 +1147,6 @@ document.getElementById('report-modal').addEventListener('click', function(e) { 
 document.getElementById('reco-close').addEventListener('click', closeRecoModal);
 document.getElementById('reco-ok').addEventListener('click', closeRecoModal);
 document.getElementById('reco-modal').addEventListener('click', function(e) { if (e.target.id === 'reco-modal') closeRecoModal(); });
-document.getElementById('continue-btn').addEventListener('click', handleContinue);
 
 // ---- UTILS ----
 function esc(s) {
