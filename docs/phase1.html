@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Social Feed Study</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="loading">Loading&hellip;</div>
+    <div id="error-msg"></div>
+
+    <div id="app">
+      <div id="feed-layout">
+        <div id="feed-root">
+          <div class="post-card">
+            <div class="post-header">
+              <div class="avatar" id="post-avatar"></div>
+              <div>
+                <div class="post-author-name" id="post-name"></div>
+                <div class="post-author-handle" id="post-handle"></div>
+              </div>
+              <span class="post-time">2h</span>
+            </div>
+            <div class="post-title" id="post-title"></div>
+            <div id="stim-media"></div>
+            <div class="action-bar">
+              <button class="action-btn" id="btn-like">
+                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
+                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
+                  <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                </svg>
+                <span id="like-label">Like</span>
+              </button>
+              <button class="action-btn" id="btn-reply">
+                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                Reply
+              </button>
+              <button class="action-btn" id="btn-repost">
+                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
+                  <path d="M17 1l4 4-4 4" />
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                  <path d="M7 23l-4-4 4-4" />
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+                <span id="repost-label">Repost</span>
+              </button>
+              <button class="action-btn" id="btn-report">
+                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                  <line x1="4" x2="4" y1="22" y2="15" />
+                </svg>
+                Report
+              </button>
+            </div>
+            <div class="reply-box">
+              <div class="avatar" style="width: 34px; height: 34px; font-size: 13px">Y</div>
+              <textarea id="post-reply-input" placeholder="Post your reply" rows="1"></textarea>
+              <button class="send-btn" id="post-reply-send">Reply</button>
+            </div>
+          </div>
+          <div class="comment-section">
+            <div class="comment-section-title">Comments</div>
+            <div id="comment-list"></div>
+            <button class="view-more-btn" id="view-more-btn">View more comments</button>
+          </div>
+        </div>
+
+        <div id="sidebar">
+          <div class="sidebar-heading">Recommended</div>
+          <div id="reco-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="report-modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span class="modal-title">Report</span>
+          <button class="modal-close" id="report-close">&times;</button>
+        </div>
+        <div id="report-body">
+          <p style="font-size: 14px; color: #536471; margin-bottom: 8px">
+            Choose the reason that best describes the issue.
+          </p>
+          <div id="report-reasons"></div>
+        </div>
+        <div class="report-thanks" id="report-thanks">
+          <div class="check">&#10003;</div>
+          <div class="msg">Thanks for reporting this</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="reco-modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span class="modal-title">Thanks for your interest!</span>
+          <button class="modal-close" id="reco-close">&times;</button>
+        </div>
+        <p style="font-size: 14px; color: #536471; line-height: 1.5">
+          Thanks for your interest in this post! This item will be available for
+          you in the next part of the survey. You can keep exploring now.
+        </p>
+        <div style="text-align: right; margin-top: 16px">
+          <button
+            id="reco-ok"
+            style="background: #0f1419; color: #fff; border: none; border-radius: 18px; padding: 8px 18px; font-weight: 700; cursor: pointer; font-size: 14px;"
+          >OK</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="app.js"></script>
+    <script>
+      var SESSION_TYPE = "phase1";
+      var CONTINUE_DELAY_MS = 45 * 1000;
+
+      var viewedAt = null;
+
+      async function init() {
+        var grpRes = await db
+          .from("groups")
+          .select("stance, format")
+          .eq("group_code", GROUP)
+          .single();
+        if (grpRes.error || !grpRes.data) {
+          showError("Could not load study configuration. Please contact the researcher.");
+          return;
+        }
+        condition = grpRes.data.format;
+        var stance = grpRes.data.stance;
+
+        var itemsRes = await db.from("items").select("*").eq("stance", stance);
+        if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
+          showError("Could not load study content. Please contact the researcher.");
+          return;
+        }
+        var pool = shuffle(itemsRes.data);
+        currentItem = pool[0];
+        recoItems = pool.slice(1, RECO_COUNT + 1);
+
+        var cmtRes = await db
+          .from("comments")
+          .select("*")
+          .eq("item_id", currentItem.id)
+          .order("display_order");
+        allComments = cmtRes.data || [];
+        allComments.forEach(function (c) {
+          commentStates[c.id] = { liked: false, reposted: false, replyCount: 0 };
+        });
+
+        await db.from("participants").insert({
+          pid: PID,
+          group_code: GROUP,
+          main_item_id: currentItem.id,
+          condition: condition,
+        });
+
+        viewedAt = new Date().toISOString();
+        wirePostBar();
+        render();
+        startContinueTimer();
+        setInterval(flushWrites, 60000);
+      }
+
+      function renderSidebar() {
+        var list = document.getElementById("reco-list");
+        list.innerHTML = "";
+        recoItems.forEach(function (item) {
+          var card = document.createElement("div");
+          card.className = "reco-card";
+          var recoUser = (item.author || "?").replace(/^@/, "");
+          card.innerHTML =
+            '<div class="reco-card-header">' +
+            '<div class="reco-avatar">' + esc(recoUser[0].toUpperCase()) + "</div>" +
+            '<span class="reco-author">@' + esc(recoUser) + "</span>" +
+            "</div>" +
+            '<div class="reco-preview">' + esc(recoPreview(item)) + "</div>";
+          card.addEventListener("click", function () {
+            handleRecoClick(item.id);
+          });
+          list.appendChild(card);
+        });
+      }
+
+      function handleRecoClick(itemId) {
+        recoClickOrder++;
+        queueWrite("sidebar_clicks", {
+          pid: PID,
+          session_type: "phase1",
+          source_item_id: currentItem.id,
+          clicked_item_id: itemId,
+          click_order: recoClickOrder,
+        });
+        document.getElementById("reco-modal").classList.add("open");
+      }
+
+      function closeRecoModal() {
+        document.getElementById("reco-modal").classList.remove("open");
+      }
+
+      async function handleContinue() {
+        if (continueFired) return;
+        continueFired = true;
+        var leftAt = new Date().toISOString();
+        await flushWrites();
+        var sessResult = await db
+          .from("sessions")
+          .insert({
+            pid: PID,
+            session_type: "phase1",
+            navigation_history: [currentItem.id],
+            started_at: viewedAt,
+            completed_at: leftAt,
+          })
+          .select("id")
+          .single();
+        if (sessResult.data) {
+          await db.from("item_views").insert({
+            session_id: sessResult.data.id,
+            pid: PID,
+            session_type: "phase1",
+            item_id: currentItem.id,
+            view_order: 1,
+            viewed_at: viewedAt,
+            left_at: leftAt,
+          });
+        }
+        window.parent.postMessage({ type: "phase1_complete", pid: PID }, "*");
+      }
+
+      document.getElementById("reco-close").addEventListener("click", closeRecoModal);
+      document.getElementById("reco-ok").addEventListener("click", closeRecoModal);
+      document.getElementById("reco-modal").addEventListener("click", function (e) {
+        if (e.target.id === "reco-modal") closeRecoModal();
+      });
+
+      init();
+    </script>
+  </body>
+</html>
