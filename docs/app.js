@@ -48,18 +48,13 @@ var pendingWrites = [];
 var reportTarget = null;
 var continueFired = false;
 
-// ---- WRITE QUEUE ----
+// ---- INTERACTION TRACKING ----
+// trackInteraction(type, data) is defined by each page script.
 function queueWrite(table, data) {
-  db.from(table).insert(data).then(function (result) {
-    if (result.error) {
-      console.error("[write]", table, result.error.message);
-    }
-  });
+  trackInteraction(table, data);
 }
 
-async function flushWrites() {
-  // no-op: all writes are now immediate. kept so handleContinue calls still work.
-}
+function flushWrites() {}
 
 // ---- UI HELPERS ----
 function mkAction(icon) {

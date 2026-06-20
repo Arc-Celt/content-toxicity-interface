@@ -373,7 +373,6 @@ body {
                 <div class="post-author-name" id="post-name"></div>
                 <div class="post-author-handle" id="post-handle"></div>
               </div>
-              <span class="post-time">2h</span>
             </div>
             <div class="post-title" id="post-title"></div>
             <div id="stim-media"></div>
@@ -499,18 +498,12 @@ var pendingWrites = [];
 var reportTarget = null;
 var continueFired = false;
 
-// ---- WRITE QUEUE ----
+// ---- INTERACTION TRACKING ----
+// trackInteraction(type, data) is defined by each page script.
 function queueWrite(table, data) {
-  db.from(table).insert(data).then(function (result) {
-    if (result.error) {
-      console.error("[write]", table, result.error.message);
-    }
-  });
+  trackInteraction(table, data);
 }
-
-async function flushWrites() {
-  // no-op: all writes are now immediate. kept so handleContinue calls still work.
-}
+function flushWrites() {}
 
 // ---- UI HELPERS ----
 function mkAction(icon) {
@@ -1575,11 +1568,80 @@ var CONTINUE_DELAY_MS = 60 * 1000;
 
 var allItemsCache = [];
 var viewedItemIds = new Set();
+// navigationHistory: [{id, viewedAt, leftAt}]
 var navigationHistory = [];
-var viewOrder = 0;
-var sessionStartedAt = null;
-var currentItemViewedAt = null;
-var itemViewsBuffer = [];
+var p2SidebarClicks  = []; // [{src, tgt}, …] in order
+
+// ---- PER-ITEM INTERACTION LOG ----
+var itemLogs = {};
+
+function getItemLog(itemId) {
+  if (!itemLogs[itemId]) {
+    itemLogs[itemId] = {
+      postLiked:           null,
+      postReposted:        null,
+      postReportedReason:  "",
+      postReplies:         [],
+      commentReplies:      [],
+      commentLikes:        {},
+      commentReposts:      {},
+      commentReports:      [],
+      commentExpansions:   0,
+    };
+  }
+  return itemLogs[itemId];
+}
+
+function trackInteraction(type, data) {
+  var log = getItemLog(currentItem.id);
+  switch (type) {
+    case "post_likes":
+      postLiked = data.liked;
+      log.postLiked = data.liked;
+      break;
+    case "post_reposts":
+      postReposted = data.reposted;
+      log.postReposted = data.reposted;
+      break;
+    case "post_reports":
+      log.postReportedReason = data.reason;
+      break;
+    case "post_replies":
+      log.postReplies.push({ idx: data.reply_index, text: data.body, deleted: false });
+      break;
+    case "post_reply_interactions":
+      var pr = log.postReplies.find(function (r) { return r.idx === data.reply_index; });
+      if (pr) {
+        if (data.action_type === "edit")   pr.text    = data.value;
+        if (data.action_type === "delete") pr.deleted = true;
+      }
+      break;
+    case "comment_expansions":
+      log.commentExpansions = data.expansion_index;
+      break;
+    case "comment_likes":
+      log.commentLikes[data.comment_id] = data.liked;
+      break;
+    case "comment_reposts":
+      log.commentReposts[data.comment_id] = data.reposted;
+      break;
+    case "comment_reports":
+      log.commentReports.push({ cid: data.comment_id, reason: data.reason });
+      break;
+    case "comment_replies":
+      log.commentReplies.push({ cid: data.comment_id, idx: data.reply_index, text: data.body, deleted: false });
+      break;
+    case "comment_reply_interactions":
+      var cr = log.commentReplies.find(function (r) {
+        return r.cid === data.comment_id && r.idx === data.reply_index;
+      });
+      if (cr) {
+        if (data.action_type === "edit")   cr.text    = data.value;
+        if (data.action_type === "delete") cr.deleted = true;
+      }
+      break;
+  }
+}
 
 async function init() {
   var grpRes = await db
@@ -1594,38 +1656,22 @@ async function init() {
   condition = grpRes.data.format;
   var stance = grpRes.data.stance;
 
-  // Fetch items + phase1 context in parallel
-  var results = await Promise.all([
-    db.from("items").select("*").eq("stance", stance),
-    db.from("participants").select("main_item_id").eq("pid", PID).maybeSingle(),
-    db.from("sidebar_clicks")
-      .select("clicked_item_id")
-      .eq("pid", PID)
-      .eq("session_type", "phase1")
-      .order("click_order", { ascending: true })
-      .limit(1)
-      .maybeSingle()
-  ]);
-  var itemsRes = results[0];
-  var participantRes = results[1];
-  var clickRes = results[2];
-
+  var itemsRes = await db.from("items").select("*").eq("stance", stance);
   if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
     showError("Could not load study content. Please contact the researcher.");
     return;
   }
   allItemsCache = itemsRes.data;
 
-  // Mark phase1 main stimulus as already viewed so it won't appear in recos
-  if (participantRes.data && participantRes.data.main_item_id) {
-    viewedItemIds.add(participantRes.data.main_item_id);
-  }
+  // Phase1 context from URL params (set by Qualtrics)
+  var p1ItemId     = params.get("p1_item_id")    || "";
+  var p1FirstClick = params.get("p1_first_click") || "";
 
-  // Starting item: first sidebar click from phase1 → else first unviewed → else any
+  if (p1ItemId) viewedItemIds.add(p1ItemId);
+
   var pool = shuffle(allItemsCache.slice());
-  var firstClickId = clickRes.data && clickRes.data.clicked_item_id;
-  if (firstClickId) {
-    currentItem = allItemsCache.find(function (i) { return i.id === firstClickId; })
+  if (p1FirstClick) {
+    currentItem = allItemsCache.find(function (i) { return i.id === p1FirstClick; })
       || pool.find(function (i) { return !viewedItemIds.has(i.id); })
       || pool[0];
   } else {
@@ -1644,21 +1690,9 @@ async function init() {
 
   loadRecos();
 
-  await db.from("participants").upsert(
-    {
-      pid: PID,
-      group_code: GROUP,
-      main_item_id: currentItem.id,
-      condition: condition,
-    },
-    { onConflict: "pid", ignoreDuplicates: true },
-  );
-
-  sessionStartedAt = new Date().toISOString();
-  currentItemViewedAt = sessionStartedAt;
+  var now = new Date().toISOString();
   viewedItemIds.add(currentItem.id);
-  navigationHistory.push(currentItem.id);
-  viewOrder = 1;
+  navigationHistory.push({ id: currentItem.id, viewedAt: now });
 
   wirePostBar();
   render();
@@ -1673,7 +1707,8 @@ function loadRecos() {
 }
 
 async function navigateTo(itemId) {
-  bufferItemView(new Date().toISOString());
+  var leftAt = new Date().toISOString();
+  navigationHistory[navigationHistory.length - 1].leftAt = leftAt;
 
   document.getElementById("feed-root").style.opacity = "0.4";
 
@@ -1685,9 +1720,8 @@ async function navigateTo(itemId) {
 
   currentItem = itemRes.data;
   viewedItemIds.add(itemId);
-  navigationHistory.push(itemId);
-  viewOrder++;
-  currentItemViewedAt = new Date().toISOString();
+  var now = new Date().toISOString();
+  navigationHistory.push({ id: itemId, viewedAt: now });
 
   var cmtRes = await db
     .from("comments")
@@ -1731,17 +1765,6 @@ function clearFeedDOM() {
   document.getElementById("btn-report").style.color = "#536471";
 }
 
-function bufferItemView(leftAt) {
-  itemViewsBuffer.push({
-    pid: PID,
-    session_type: "phase2",
-    item_id: currentItem.id,
-    view_order: viewOrder,
-    viewed_at: currentItemViewedAt,
-    left_at: leftAt,
-  });
-}
-
 function renderSidebar() {
   var list = document.getElementById("reco-list");
   list.innerHTML = "";
@@ -1761,47 +1784,64 @@ function renderSidebar() {
       "</div>" +
       '<div class="reco-preview">' + esc(recoPreview(item)) + "</div>";
     card.addEventListener("click", function () {
-      recoClickOrder++;
-      queueWrite("sidebar_clicks", {
-        pid: PID,
-        session_type: "phase2",
-        source_item_id: currentItem.id,
-        clicked_item_id: item.id,
-        click_order: recoClickOrder,
-      });
+      p2SidebarClicks.push({ src: currentItem.id, tgt: item.id });
       navigateTo(item.id);
     });
     list.appendChild(card);
   });
 }
 
-async function handleContinue() {
+function handleContinue() {
   if (continueFired) return;
   continueFired = true;
+
   var leftAt = new Date().toISOString();
+  navigationHistory[navigationHistory.length - 1].leftAt = leftAt;
 
-  bufferItemView(leftAt);
-  await flushWrites();
+  var p2Nav = navigationHistory.map(function (n) {
+    var secs = n.leftAt
+      ? Math.round((new Date(n.leftAt) - new Date(n.viewedAt)) / 1000)
+      : 0;
+    return { id: n.id, secs: secs };
+  });
 
-  var sessResult = await db
-    .from("sessions")
-    .insert({
-      pid: PID,
-      session_type: "phase2",
-      navigation_history: navigationHistory,
-      started_at: sessionStartedAt,
-      completed_at: leftAt,
-    })
-    .select("id")
-    .single();
+  var p2PostLikes = {}, p2PostReposts = {}, p2PostReports = [], p2PostReplies = [];
+  var p2CmtExp = {}, p2CmtLikes = {}, p2CmtReposts = {};
+  var p2CmtReports = [], p2CmtReplies = [];
 
-  if (sessResult.data) {
-    var sessId = sessResult.data.id;
-    var viewRows = itemViewsBuffer.map(function (v) {
-      return Object.assign({}, v, { session_id: sessId });
+  Object.keys(itemLogs).forEach(function (id) {
+    var log = itemLogs[id];
+    if (log.postLiked    !== null) p2PostLikes[id]   = log.postLiked    ? 1 : 0;
+    if (log.postReposted !== null) p2PostReposts[id] = log.postReposted ? 1 : 0;
+    if (log.postReportedReason)    p2PostReports.push({ id: id, reason: log.postReportedReason });
+    var replies = log.postReplies.filter(function (r) { return !r.deleted; });
+    if (replies.length) p2PostReplies.push({ id: id, texts: replies.map(function (r) { return r.text; }) });
+    if (log.commentExpansions > 0) p2CmtExp[id] = log.commentExpansions;
+    var likedCids = Object.keys(log.commentLikes).filter(function (k) { return log.commentLikes[k]; });
+    if (likedCids.length) p2CmtLikes[id] = likedCids;
+    var repostedCids = Object.keys(log.commentReposts).filter(function (k) { return log.commentReposts[k]; });
+    if (repostedCids.length) p2CmtReposts[id] = repostedCids;
+    log.commentReports.forEach(function (r) { p2CmtReports.push({ id: id, cid: r.cid, reason: r.reason }); });
+    log.commentReplies.filter(function (r) { return !r.deleted; }).forEach(function (r) {
+      p2CmtReplies.push({ id: id, cid: r.cid, text: r.text });
     });
-    await db.from("item_views").insert(viewRows);
-  }
+  });
+
+  var payload = {
+    p2_nav:                JSON.stringify(p2Nav),
+    p2_post_likes:         JSON.stringify(p2PostLikes),
+    p2_post_reposts:       JSON.stringify(p2PostReposts),
+    p2_post_reports:       JSON.stringify(p2PostReports),
+    p2_post_replies:       JSON.stringify(p2PostReplies),
+    p2_comment_expansions: JSON.stringify(p2CmtExp),
+    p2_comment_likes:      JSON.stringify(p2CmtLikes),
+    p2_comment_reposts:    JSON.stringify(p2CmtReposts),
+    p2_comment_reports:    JSON.stringify(p2CmtReports),
+    p2_comment_replies:    JSON.stringify(p2CmtReplies),
+    p2_sidebar_clicks:     JSON.stringify(p2SidebarClicks),
+  };
+
+  window.parent.postMessage({ type: "phase2_complete", data: payload }, "*");
 }
 
 init();

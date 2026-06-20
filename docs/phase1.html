@@ -20,7 +20,6 @@
                 <div class="post-author-name" id="post-name"></div>
                 <div class="post-author-handle" id="post-handle"></div>
               </div>
-              <span class="post-time">2h</span>
             </div>
             <div class="post-title" id="post-title"></div>
             <div id="stim-media"></div>
@@ -119,7 +118,66 @@
       var SESSION_TYPE = "phase1";
       var CONTINUE_DELAY_MS = 45 * 1000;
 
-      var viewedAt = null;
+      // ---- INTERACTION LOG ----
+      var p1PostReplies    = [];   // {idx, text, deleted}
+      var p1CommentReplies = [];   // {cid, idx, text, deleted}
+      var p1CommentLikes   = {};   // cid → bool (final state)
+      var p1CommentReposts = {};   // cid → bool (final state)
+      var p1CommentReports = [];   // {cid, reason}
+      var p1SidebarClicks  = [];   // [itemId, …] in order
+      var p1CommentExpansions = 0;
+      var p1PostReportedReason = "";
+
+      function trackInteraction(type, data) {
+        switch (type) {
+          case "post_likes":
+            postLiked = data.liked;
+            break;
+          case "post_reposts":
+            postReposted = data.reposted;
+            break;
+          case "post_reports":
+            p1PostReportedReason = data.reason;
+            break;
+          case "post_replies":
+            p1PostReplies.push({ idx: data.reply_index, text: data.body, deleted: false });
+            break;
+          case "post_reply_interactions":
+            var pr = p1PostReplies.find(function (r) { return r.idx === data.reply_index; });
+            if (pr) {
+              if (data.action_type === "edit")   pr.text    = data.value;
+              if (data.action_type === "delete") pr.deleted = true;
+            }
+            break;
+          case "comment_expansions":
+            p1CommentExpansions = data.expansion_index;
+            break;
+          case "comment_likes":
+            p1CommentLikes[data.comment_id] = data.liked;
+            break;
+          case "comment_reposts":
+            p1CommentReposts[data.comment_id] = data.reposted;
+            break;
+          case "comment_reports":
+            p1CommentReports.push({ cid: data.comment_id, reason: data.reason });
+            break;
+          case "comment_replies":
+            p1CommentReplies.push({ cid: data.comment_id, idx: data.reply_index, text: data.body, deleted: false });
+            break;
+          case "comment_reply_interactions":
+            var cr = p1CommentReplies.find(function (r) {
+              return r.cid === data.comment_id && r.idx === data.reply_index;
+            });
+            if (cr) {
+              if (data.action_type === "edit")   cr.text    = data.value;
+              if (data.action_type === "delete") cr.deleted = true;
+            }
+            break;
+          case "sidebar_clicks":
+            p1SidebarClicks.push(data.clicked_item_id);
+            break;
+        }
+      }
 
       async function init() {
         var grpRes = await db
@@ -153,14 +211,6 @@
           commentStates[c.id] = { liked: false, reposted: false, replyCount: 0 };
         });
 
-        await db.from("participants").insert({
-          pid: PID,
-          group_code: GROUP,
-          main_item_id: currentItem.id,
-          condition: condition,
-        });
-
-        viewedAt = new Date().toISOString();
         wirePostBar();
         render();
         startContinueTimer();
@@ -179,22 +229,13 @@
             '<span class="reco-author">@' + esc(recoUser) + "</span>" +
             "</div>" +
             '<div class="reco-preview">' + esc(recoPreview(item)) + "</div>";
-          card.addEventListener("click", function () {
-            handleRecoClick(item.id);
-          });
+          card.addEventListener("click", function () { handleRecoClick(item.id); });
           list.appendChild(card);
         });
       }
 
       function handleRecoClick(itemId) {
-        recoClickOrder++;
-        queueWrite("sidebar_clicks", {
-          pid: PID,
-          session_type: "phase1",
-          source_item_id: currentItem.id,
-          clicked_item_id: itemId,
-          click_order: recoClickOrder,
-        });
+        p1SidebarClicks.push(itemId);
         document.getElementById("reco-modal").classList.add("open");
       }
 
@@ -202,33 +243,36 @@
         document.getElementById("reco-modal").classList.remove("open");
       }
 
-      async function handleContinue() {
+      function handleContinue() {
         if (continueFired) return;
         continueFired = true;
-        var leftAt = new Date().toISOString();
-        await flushWrites();
-        var sessResult = await db
-          .from("sessions")
-          .insert({
-            pid: PID,
-            session_type: "phase1",
-            navigation_history: [currentItem.id],
-            started_at: viewedAt,
-            completed_at: leftAt,
-          })
-          .select("id")
-          .single();
-        if (sessResult.data) {
-          await db.from("item_views").insert({
-            session_id: sessResult.data.id,
-            pid: PID,
-            session_type: "phase1",
-            item_id: currentItem.id,
-            view_order: 1,
-            viewed_at: viewedAt,
-            left_at: leftAt,
-          });
-        }
+
+        var payload = {
+          p1_item_id:            currentItem.id,
+          p1_first_click:        p1SidebarClicks[0] || "",
+          p1_post_liked:         postLiked    ? "1" : "0",
+          p1_post_reposted:      postReposted ? "1" : "0",
+          p1_post_reported:      p1PostReportedReason,
+          p1_post_replies:       JSON.stringify(
+            p1PostReplies.filter(function (r) { return !r.deleted; })
+                         .map(function (r) { return r.text; })
+          ),
+          p1_comment_expansions: String(p1CommentExpansions),
+          p1_comment_likes:      JSON.stringify(
+            Object.keys(p1CommentLikes).filter(function (k) { return p1CommentLikes[k]; })
+          ),
+          p1_comment_reposts:    JSON.stringify(
+            Object.keys(p1CommentReposts).filter(function (k) { return p1CommentReposts[k]; })
+          ),
+          p1_comment_reports:    JSON.stringify(p1CommentReports),
+          p1_comment_replies:    JSON.stringify(
+            p1CommentReplies.filter(function (r) { return !r.deleted; })
+                            .map(function (r) { return { cid: r.cid, text: r.text }; })
+          ),
+          p1_sidebar_clicks:     JSON.stringify(p1SidebarClicks),
+        };
+
+        window.parent.postMessage({ type: "phase1_complete", data: payload }, "*");
       }
 
       document.getElementById("reco-close").addEventListener("click", closeRecoModal);
