@@ -741,25 +741,11 @@
         setInterval(flushWrites, 60000);
       }
 
-      // Synchronous — filters allItemsCache in memory.
-      // Priority: unviewed same-stance → unviewed other stance → already-viewed (fallback for endless nav)
       function loadRecos() {
-        var pool = allItemsCache.filter(function (i) {
-          return i.id !== currentItem.id;
+        var unviewed = allItemsCache.filter(function (i) {
+          return i.id !== currentItem.id && !viewedItemIds.has(i.id);
         });
-        var unviewedSame = pool.filter(function (i) {
-          return !viewedItemIds.has(i.id) && i.stance === currentItem.stance;
-        });
-        var unviewedOther = pool.filter(function (i) {
-          return !viewedItemIds.has(i.id) && i.stance !== currentItem.stance;
-        });
-        var fallback = pool.filter(function (i) {
-          return viewedItemIds.has(i.id);
-        });
-        recoItems = shuffle(unviewedSame)
-          .concat(shuffle(unviewedOther))
-          .concat(shuffle(fallback))
-          .slice(0, RECO_COUNT);
+        recoItems = shuffle(unviewed).slice(0, RECO_COUNT);
       }
 
       // ---- NAVIGATION ----
@@ -1648,11 +1634,10 @@
         list.innerHTML = "";
         if (!recoItems.length) {
           list.innerHTML =
-            '<p style="color:#536471;font-size:14px;padding:8px 0">No more recommendations.</p>';
+            '<p style="color:#536471;font-size:14px;padding:8px 0">You\'ve explored all available posts.</p>';
           return;
         }
         recoItems.forEach(function (item) {
-          var isViewed = viewedItemIds.has(item.id);
           var card = document.createElement("div");
           card.className = "reco-card";
           var recoUser = (item.author || "?").replace(/^@/, "");
@@ -1664,20 +1649,12 @@
             '<span class="reco-author">@' +
             esc(recoUser) +
             "</span>" +
-            (isViewed ? '<span class="reco-revisit">Revisit</span>' : "") +
             "</div>" +
             '<div class="reco-preview">' +
             esc(recoPreview(item)) +
             "</div>";
           card.addEventListener("click", function () {
-            recoClickOrder++;
-            queueWrite("sidebar_clicks", {
-              pid: PID,
-              session_type: "phase2",
-              source_item_id: currentItem.id,
-              clicked_item_id: item.id,
-              click_order: recoClickOrder,
-            });
+            p2SidebarClicks.push({ src: currentItem.id, tgt: item.id });
             navigateTo(item.id);
           });
           list.appendChild(card);

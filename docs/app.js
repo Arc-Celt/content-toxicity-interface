@@ -921,16 +921,16 @@ function renderPostSubReply(container, replyObj) {
 }
 
 function recoPreview(item) {
-  if (item.title && item.title !== "nan")
-    return item.title.length > 90 ? item.title.slice(0, 90) + "…" : item.title;
-  if (item.transcript) {
-    try {
-      var paras = JSON.parse(item.transcript);
-      var text = (Array.isArray(paras) ? paras[0] : String(paras)) || "";
-      return text.length > 90 ? text.slice(0, 90) + "…" : text;
-    } catch (e) {}
+  if (!item.transcript) return "";
+  var text;
+  try {
+    var paras = JSON.parse(item.transcript);
+    text = Array.isArray(paras) ? paras.join(" ") : String(paras);
+  } catch (e) {
+    text = item.transcript;
   }
-  return "";
+  var words = text.trim().split(/\s+/);
+  return words.length > 100 ? words.slice(0, 100).join(" ") + "…" : text;
 }
 
 // ---- POST BAR ----
