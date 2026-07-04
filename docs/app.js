@@ -4,7 +4,7 @@ var SUPABASE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdWFob21qeXR3dmlva3l2cXZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MDkzNTIsImV4cCI6MjA5NzE4NTM1Mn0.ZwRemPh4GPsEE_lioue8e5uxHotjfMzXJdOjN1373dc";
 var INITIAL_COMMENTS = 2;
 var COMMENTS_PER_LOAD = 2;
-var RECO_COUNT = 5;
+var RECO_COUNT = 3;
 
 var REPORT_REASONS = [
   { id: "spam_misleading", label: "Spam or misleading" },
@@ -165,8 +165,7 @@ function renderPost() {
   document.getElementById("post-avatar").textContent = postUser[0].toUpperCase();
   document.getElementById("post-name").textContent = "@" + postUser;
   document.getElementById("post-handle").textContent = "";
-  document.getElementById("post-title").textContent =
-    currentItem.title && currentItem.title !== "nan" ? currentItem.title : "";
+  document.getElementById("post-title").style.display = "none";
   var media = document.getElementById("stim-media");
   media.innerHTML = "";
   if (condition === "video" && currentItem.video_url) {
