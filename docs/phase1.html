@@ -270,6 +270,7 @@
                             .map(function (r) { return { cid: r.cid, text: r.text }; })
           ),
           p1_sidebar_clicks:     JSON.stringify(p1SidebarClicks),
+          p1_sidebar_clicks_raw: p1SidebarClicks.join(","),
         };
 
         window.parent.postMessage({ type: "phase1_complete", data: payload }, "*");
