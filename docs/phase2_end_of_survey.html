@@ -390,6 +390,13 @@
         window.parent.postMessage({ type: "phase2_complete", data: payload }, "*");
       }
 
+      function startContinueTimer() {}
+
+      window.addEventListener("message", function(e) {
+        if (!e.data || e.data.type !== "flush_request") return;
+        handleContinue();
+      });
+
       init();
     </script>
   </body>
