@@ -237,6 +237,7 @@
         wirePostBar();
         render();
         startContinueTimer();
+        window.parent.postMessage({ type: "phase2_ready" }, "*");
       }
 
       function loadRecos() {

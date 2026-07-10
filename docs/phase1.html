@@ -213,6 +213,7 @@
         wirePostBar();
         render();
         startContinueTimer();
+        window.parent.postMessage({ type: "phase1_ready" }, "*");
       }
 
       function renderSidebar() {
