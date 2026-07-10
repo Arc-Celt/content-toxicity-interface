@@ -127,6 +127,39 @@
       var p1CommentExpansions = 0;
       var p1PostReportedReason = "";
 
+      function buildPayload() {
+        return {
+          p1_item_id:            currentItem ? currentItem.id : "",
+          p1_first_click:        p1SidebarClicks[0] || "",
+          p1_post_liked:         postLiked    ? "1" : "0",
+          p1_post_reposted:      postReposted ? "1" : "0",
+          p1_post_reported:      p1PostReportedReason,
+          p1_post_replies:       JSON.stringify(
+            p1PostReplies.filter(function (r) { return !r.deleted; })
+                         .map(function (r) { return r.text; })
+          ),
+          p1_comment_expansions: String(p1CommentExpansions),
+          p1_comment_likes:      JSON.stringify(
+            Object.keys(p1CommentLikes).filter(function (k) { return p1CommentLikes[k]; })
+          ),
+          p1_comment_reposts:    JSON.stringify(
+            Object.keys(p1CommentReposts).filter(function (k) { return p1CommentReposts[k]; })
+          ),
+          p1_comment_reports:    JSON.stringify(p1CommentReports),
+          p1_comment_replies:    JSON.stringify(
+            p1CommentReplies.filter(function (r) { return !r.deleted; })
+                            .map(function (r) { return { cid: r.cid, text: r.text }; })
+          ),
+          p1_sidebar_clicks:     JSON.stringify(p1SidebarClicks),
+          p1_sidebar_clicks_raw: p1SidebarClicks.join(","),
+        };
+      }
+
+      function sendState() {
+        if (!currentItem) return;
+        window.parent.postMessage({ type: "phase1_update", data: buildPayload() }, "*");
+      }
+
       function trackInteraction(type, data) {
         switch (type) {
           case "post_likes":
@@ -176,6 +209,7 @@
             p1SidebarClicks.push(data.clicked_item_id);
             break;
         }
+        sendState();
       }
 
       async function init() {
@@ -213,6 +247,7 @@
         wirePostBar();
         render();
         startContinueTimer();
+        sendState();
       }
 
       function renderSidebar() {
@@ -235,6 +270,7 @@
 
       function handleRecoClick(itemId) {
         p1SidebarClicks.push(itemId);
+        sendState();
         document.getElementById("reco-modal").classList.add("open");
       }
 
@@ -245,34 +281,7 @@
       function handleContinue() {
         if (continueFired) return;
         continueFired = true;
-
-        var payload = {
-          p1_item_id:            currentItem.id,
-          p1_first_click:        p1SidebarClicks[0] || "",
-          p1_post_liked:         postLiked    ? "1" : "0",
-          p1_post_reposted:      postReposted ? "1" : "0",
-          p1_post_reported:      p1PostReportedReason,
-          p1_post_replies:       JSON.stringify(
-            p1PostReplies.filter(function (r) { return !r.deleted; })
-                         .map(function (r) { return r.text; })
-          ),
-          p1_comment_expansions: String(p1CommentExpansions),
-          p1_comment_likes:      JSON.stringify(
-            Object.keys(p1CommentLikes).filter(function (k) { return p1CommentLikes[k]; })
-          ),
-          p1_comment_reposts:    JSON.stringify(
-            Object.keys(p1CommentReposts).filter(function (k) { return p1CommentReposts[k]; })
-          ),
-          p1_comment_reports:    JSON.stringify(p1CommentReports),
-          p1_comment_replies:    JSON.stringify(
-            p1CommentReplies.filter(function (r) { return !r.deleted; })
-                            .map(function (r) { return { cid: r.cid, text: r.text }; })
-          ),
-          p1_sidebar_clicks:     JSON.stringify(p1SidebarClicks),
-          p1_sidebar_clicks_raw: p1SidebarClicks.join(","),
-        };
-
-        window.parent.postMessage({ type: "phase1_complete", data: payload }, "*");
+        window.parent.postMessage({ type: "phase1_complete", data: buildPayload() }, "*");
       }
 
       document.getElementById("reco-close").addEventListener("click", closeRecoModal);

@@ -126,6 +126,56 @@
         return itemLogs[itemId];
       }
 
+      function buildPayload() {
+        var now = new Date().toISOString();
+        var p2Nav = navigationHistory.map(function(n, idx) {
+          var left = n.leftAt || (idx === navigationHistory.length - 1 ? now : null);
+          var secs = left ? Math.round((new Date(left) - new Date(n.viewedAt)) / 1000) : 0;
+          return { id: n.id, secs: secs };
+        });
+
+        var p2PostLikes = {}, p2PostReposts = {}, p2PostReports = [], p2PostReplies = [];
+        var p2CmtExp = {}, p2CmtLikes = {}, p2CmtReposts = {};
+        var p2CmtReports = [], p2CmtReplies = [];
+
+        Object.keys(itemLogs).forEach(function (id) {
+          var log = itemLogs[id];
+          if (log.postLiked    !== null) p2PostLikes[id]   = log.postLiked    ? 1 : 0;
+          if (log.postReposted !== null) p2PostReposts[id] = log.postReposted ? 1 : 0;
+          if (log.postReportedReason)   p2PostReports.push({ id: id, reason: log.postReportedReason });
+          var replies = log.postReplies.filter(function (r) { return !r.deleted; });
+          if (replies.length) p2PostReplies.push({ id: id, texts: replies.map(function (r) { return r.text; }) });
+          if (log.commentExpansions > 0) p2CmtExp[id] = log.commentExpansions;
+          var likedCids = Object.keys(log.commentLikes).filter(function (k) { return log.commentLikes[k]; });
+          if (likedCids.length) p2CmtLikes[id] = likedCids;
+          var repostedCids = Object.keys(log.commentReposts).filter(function (k) { return log.commentReposts[k]; });
+          if (repostedCids.length) p2CmtReposts[id] = repostedCids;
+          log.commentReports.forEach(function (r) { p2CmtReports.push({ id: id, cid: r.cid, reason: r.reason }); });
+          log.commentReplies.filter(function (r) { return !r.deleted; }).forEach(function (r) {
+            p2CmtReplies.push({ id: id, cid: r.cid, text: r.text });
+          });
+        });
+
+        return {
+          p2_nav:                JSON.stringify(p2Nav),
+          p2_post_likes:         JSON.stringify(p2PostLikes),
+          p2_post_reposts:       JSON.stringify(p2PostReposts),
+          p2_post_reports:       JSON.stringify(p2PostReports),
+          p2_post_replies:       JSON.stringify(p2PostReplies),
+          p2_comment_expansions: JSON.stringify(p2CmtExp),
+          p2_comment_likes:      JSON.stringify(p2CmtLikes),
+          p2_comment_reposts:    JSON.stringify(p2CmtReposts),
+          p2_comment_reports:    JSON.stringify(p2CmtReports),
+          p2_comment_replies:    JSON.stringify(p2CmtReplies),
+          p2_sidebar_clicks:     JSON.stringify(p2SidebarClicks),
+        };
+      }
+
+      function sendState() {
+        if (!currentItem) return;
+        window.parent.postMessage({ type: "phase2_update", data: buildPayload() }, "*");
+      }
+
       function trackInteraction(type, data) {
         var log = getItemLog(currentItem.id);
         switch (type) {
@@ -175,6 +225,7 @@
             }
             break;
         }
+        sendState();
       }
 
       async function init() {
@@ -237,6 +288,7 @@
         wirePostBar();
         render();
         startContinueTimer();
+        sendState();
       }
 
       function loadRecos() {
@@ -291,6 +343,7 @@
         loadRecos();
         clearFeedDOM();
         render();
+        sendState();
         window.scrollTo({ top: 0, behavior: "smooth" });
 
         document.getElementById("feed-root").style.opacity = "1";
@@ -340,54 +393,8 @@
       function handleContinue() {
         if (continueFired) return;
         continueFired = true;
-
-        var leftAt = new Date().toISOString();
-        navigationHistory[navigationHistory.length - 1].leftAt = leftAt;
-
-        var p2Nav = navigationHistory.map(function (n) {
-          var secs = n.leftAt
-            ? Math.round((new Date(n.leftAt) - new Date(n.viewedAt)) / 1000)
-            : 0;
-          return { id: n.id, secs: secs };
-        });
-
-        var p2PostLikes = {}, p2PostReposts = {}, p2PostReports = [], p2PostReplies = [];
-        var p2CmtExp = {}, p2CmtLikes = {}, p2CmtReposts = {};
-        var p2CmtReports = [], p2CmtReplies = [];
-
-        Object.keys(itemLogs).forEach(function (id) {
-          var log = itemLogs[id];
-          if (log.postLiked    !== null) p2PostLikes[id]    = log.postLiked    ? 1 : 0;
-          if (log.postReposted !== null) p2PostReposts[id]  = log.postReposted ? 1 : 0;
-          if (log.postReportedReason)    p2PostReports.push({ id: id, reason: log.postReportedReason });
-          var replies = log.postReplies.filter(function (r) { return !r.deleted; });
-          if (replies.length) p2PostReplies.push({ id: id, texts: replies.map(function (r) { return r.text; }) });
-          if (log.commentExpansions > 0) p2CmtExp[id] = log.commentExpansions;
-          var likedCids = Object.keys(log.commentLikes).filter(function (k) { return log.commentLikes[k]; });
-          if (likedCids.length) p2CmtLikes[id] = likedCids;
-          var repostedCids = Object.keys(log.commentReposts).filter(function (k) { return log.commentReposts[k]; });
-          if (repostedCids.length) p2CmtReposts[id] = repostedCids;
-          log.commentReports.forEach(function (r) { p2CmtReports.push({ id: id, cid: r.cid, reason: r.reason }); });
-          log.commentReplies.filter(function (r) { return !r.deleted; }).forEach(function (r) {
-            p2CmtReplies.push({ id: id, cid: r.cid, text: r.text });
-          });
-        });
-
-        var payload = {
-          p2_nav:                JSON.stringify(p2Nav),
-          p2_post_likes:         JSON.stringify(p2PostLikes),
-          p2_post_reposts:       JSON.stringify(p2PostReposts),
-          p2_post_reports:       JSON.stringify(p2PostReports),
-          p2_post_replies:       JSON.stringify(p2PostReplies),
-          p2_comment_expansions: JSON.stringify(p2CmtExp),
-          p2_comment_likes:      JSON.stringify(p2CmtLikes),
-          p2_comment_reposts:    JSON.stringify(p2CmtReposts),
-          p2_comment_reports:    JSON.stringify(p2CmtReports),
-          p2_comment_replies:    JSON.stringify(p2CmtReplies),
-          p2_sidebar_clicks:     JSON.stringify(p2SidebarClicks),
-        };
-
-        window.parent.postMessage({ type: "phase2_complete", data: payload }, "*");
+        navigationHistory[navigationHistory.length - 1].leftAt = new Date().toISOString();
+        window.parent.postMessage({ type: "phase2_complete", data: buildPayload() }, "*");
       }
 
       init();
