@@ -213,7 +213,6 @@
         wirePostBar();
         render();
         startContinueTimer();
-        window.parent.postMessage({ type: "phase1_ready" }, "*");
       }
 
       function renderSidebar() {
@@ -280,13 +279,6 @@
       document.getElementById("reco-ok").addEventListener("click", closeRecoModal);
       document.getElementById("reco-modal").addEventListener("click", function (e) {
         if (e.target.id === "reco-modal") closeRecoModal();
-      });
-
-      function startContinueTimer() {}
-
-      window.addEventListener("message", function(e) {
-        if (!e.data || e.data.type !== "flush_request") return;
-        handleContinue();
       });
 
       init();
