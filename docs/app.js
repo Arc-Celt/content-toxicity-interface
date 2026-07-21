@@ -167,8 +167,10 @@ function renderPost() {
     postUser[0].toUpperCase();
   document.getElementById("post-name").textContent = "@" + postUser;
   document.getElementById("post-handle").textContent = "";
-  document.getElementById("post-title").textContent =
-    currentItem.title && currentItem.title !== "nan" ? currentItem.title : "";
+  document.getElementById("post-title").innerHTML =
+    currentItem.title && currentItem.title !== "nan"
+      ? linkifyHashtags(currentItem.title)
+      : "";
   var media = document.getElementById("stim-media");
   media.innerHTML = "";
   if (condition === "video" && currentItem.video_url) {
@@ -1072,6 +1074,16 @@ function esc(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+function linkifyHashtags(text) {
+  return String(text || "")
+    .split(/(#\w+)/g)
+    .map(function (part) {
+      return /^#\w+$/.test(part)
+        ? '<span style="color:#536471;">' + esc(part) + "</span>"
+        : esc(part);
+    })
+    .join("");
 }
 function youtubeId(url) {
   var m = String(url).match(
