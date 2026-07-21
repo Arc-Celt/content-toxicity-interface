@@ -3,7 +3,7 @@ var SUPABASE_URL = "https://nqyfdluxupdxebziunfr.supabase.co";
 var SUPABASE_KEY = "sb_publishable_Bft66-E0T9pF5oSVcnZ7_A_22XaT3FH";
 var INITIAL_COMMENTS = 2;
 var COMMENTS_PER_LOAD = 2;
-var RECO_COUNT = 3;
+var RECO_COUNT = 5;
 
 var REPORT_REASONS = [
   { id: "spam_misleading", label: "Spam or misleading" },
@@ -166,7 +166,8 @@ function renderPost() {
   document.getElementById("post-avatar").textContent = postUser[0].toUpperCase();
   document.getElementById("post-name").textContent = "@" + postUser;
   document.getElementById("post-handle").textContent = "";
-  document.getElementById("post-title").style.display = "none";
+  document.getElementById("post-title").textContent =
+    currentItem.title && currentItem.title !== "nan" ? currentItem.title : "";
   var media = document.getElementById("stim-media");
   media.innerHTML = "";
   if (condition === "video" && currentItem.video_url) {
@@ -930,7 +931,7 @@ function recoPreview(item) {
     text = item.transcript;
   }
   var words = text.trim().split(/\s+/);
-  return words.length > 25 ? words.slice(0, 25).join(" ") + "…" : text;
+  return words.length > 30 ? words.slice(0, 30).join(" ") + "…" : text;
 }
 
 // Ranks item_id_b values by similarity to itemId, restricted to eligibleIds.

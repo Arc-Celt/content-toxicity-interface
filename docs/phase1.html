@@ -25,20 +25,51 @@
             <div id="stim-media"></div>
             <div class="action-bar">
               <button class="action-btn" id="btn-like">
-                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
-                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"
+                  />
                   <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
                 </svg>
                 <span id="like-label">Like</span>
               </button>
               <button class="action-btn" id="btn-reply">
-                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  />
                 </svg>
                 Reply
               </button>
               <button class="action-btn" id="btn-repost">
-                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
                   <path d="M17 1l4 4-4 4" />
                   <path d="M3 11V9a4 4 0 0 1 4-4h14" />
                   <path d="M7 23l-4-4 4-4" />
@@ -47,23 +78,45 @@
                 <span id="repost-label">Repost</span>
               </button>
               <button class="action-btn" id="btn-report">
-                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
-                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+                  />
                   <line x1="4" x2="4" y1="22" y2="15" />
                 </svg>
                 Report
               </button>
             </div>
             <div class="reply-box">
-              <div class="avatar" style="width: 34px; height: 34px; font-size: 13px">Y</div>
-              <textarea id="post-reply-input" placeholder="Post your reply" rows="1"></textarea>
+              <div
+                class="avatar"
+                style="width: 34px; height: 34px; font-size: 13px"
+              >
+                Y
+              </div>
+              <textarea
+                id="post-reply-input"
+                placeholder="Post your reply"
+                rows="1"
+              ></textarea>
               <button class="send-btn" id="post-reply-send">Reply</button>
             </div>
           </div>
           <div class="comment-section">
             <div class="comment-section-title">Comments</div>
             <div id="comment-list"></div>
-            <button class="view-more-btn" id="view-more-btn">View more comments</button>
+            <button class="view-more-btn" id="view-more-btn">
+              View more comments
+            </button>
           </div>
         </div>
 
@@ -100,13 +153,26 @@
           <button class="modal-close" id="reco-close">&times;</button>
         </div>
         <p style="font-size: 14px; color: #536471; line-height: 1.5">
-          Thank you! Your interest in this post has been recorded. You can continue browsing.
+          After the survey, you'll have the option to read it and browse more
+          similar posts that we've personalized for you. You can continue
+          browsing and select any other posts that interest you.
         </p>
         <div style="text-align: right; margin-top: 16px">
           <button
             id="reco-ok"
-            style="background: #0f1419; color: #fff; border: none; border-radius: 18px; padding: 8px 18px; font-weight: 700; cursor: pointer; font-size: 14px;"
-          >OK</button>
+            style="
+              background: #0f1419;
+              color: #fff;
+              border: none;
+              border-radius: 18px;
+              padding: 8px 18px;
+              font-weight: 700;
+              cursor: pointer;
+              font-size: 14px;
+            "
+          >
+            OK
+          </button>
         </div>
       </div>
     </div>
@@ -118,46 +184,63 @@
       var CONTINUE_DELAY_MS = 45 * 1000;
 
       // ---- INTERACTION LOG ----
-      var p1PostReplies    = [];   // {idx, text, deleted}
-      var p1CommentReplies = [];   // {cid, idx, text, deleted}
-      var p1CommentLikes   = {};   // cid → bool (final state)
-      var p1CommentReposts = {};   // cid → bool (final state)
-      var p1CommentReports = [];   // {cid, reason}
-      var p1SidebarClicks  = [];   // [itemId, …] in order
+      var p1PostReplies = []; // {idx, text, deleted}
+      var p1CommentReplies = []; // {cid, idx, text, deleted}
+      var p1CommentLikes = {}; // cid → bool (final state)
+      var p1CommentReposts = {}; // cid → bool (final state)
+      var p1CommentReports = []; // {cid, reason}
+      var p1SidebarClicks = []; // [itemId, …] in order
       var p1CommentExpansions = 0;
       var p1PostReportedReason = "";
 
       function buildPayload() {
         return {
-          p1_item_id:            currentItem ? currentItem.id : "",
-          p1_last_click:         p1SidebarClicks[p1SidebarClicks.length - 1] || "",
-          p1_post_liked:         postLiked    ? "1" : "0",
-          p1_post_reposted:      postReposted ? "1" : "0",
-          p1_post_reported:      p1PostReportedReason,
-          p1_post_replies:       JSON.stringify(
-            p1PostReplies.filter(function (r) { return !r.deleted; })
-                         .map(function (r) { return r.text; })
+          p1_item_id: currentItem ? currentItem.id : "",
+          p1_last_click: p1SidebarClicks[p1SidebarClicks.length - 1] || "",
+          p1_post_liked: postLiked ? "1" : "0",
+          p1_post_reposted: postReposted ? "1" : "0",
+          p1_post_reported: p1PostReportedReason,
+          p1_post_replies: JSON.stringify(
+            p1PostReplies
+              .filter(function (r) {
+                return !r.deleted;
+              })
+              .map(function (r) {
+                return r.text;
+              }),
           ),
           p1_comment_expansions: String(p1CommentExpansions),
-          p1_comment_likes:      JSON.stringify(
-            Object.keys(p1CommentLikes).filter(function (k) { return p1CommentLikes[k]; })
+          p1_comment_likes: JSON.stringify(
+            Object.keys(p1CommentLikes).filter(function (k) {
+              return p1CommentLikes[k];
+            }),
           ),
-          p1_comment_reposts:    JSON.stringify(
-            Object.keys(p1CommentReposts).filter(function (k) { return p1CommentReposts[k]; })
+          p1_comment_reposts: JSON.stringify(
+            Object.keys(p1CommentReposts).filter(function (k) {
+              return p1CommentReposts[k];
+            }),
           ),
-          p1_comment_reports:    JSON.stringify(p1CommentReports),
-          p1_comment_replies:    JSON.stringify(
-            p1CommentReplies.filter(function (r) { return !r.deleted; })
-                            .map(function (r) { return { cid: r.cid, text: r.text }; })
+          p1_comment_reports: JSON.stringify(p1CommentReports),
+          p1_comment_replies: JSON.stringify(
+            p1CommentReplies
+              .filter(function (r) {
+                return !r.deleted;
+              })
+              .map(function (r) {
+                return { cid: r.cid, text: r.text };
+              }),
           ),
-          p1_sidebar_clicks:     JSON.stringify(p1SidebarClicks),
+          p1_sidebar_clicks: JSON.stringify(p1SidebarClicks),
           p1_sidebar_clicks_raw: p1SidebarClicks.join(","),
         };
       }
 
       function sendState() {
         if (!currentItem) return;
-        window.parent.postMessage({ type: "phase1_update", data: buildPayload() }, "*");
+        window.parent.postMessage(
+          { type: "phase1_update", data: buildPayload() },
+          "*",
+        );
       }
 
       function trackInteraction(type, data) {
@@ -172,12 +255,18 @@
             p1PostReportedReason = data.reason;
             break;
           case "post_replies":
-            p1PostReplies.push({ idx: data.reply_index, text: data.body, deleted: false });
+            p1PostReplies.push({
+              idx: data.reply_index,
+              text: data.body,
+              deleted: false,
+            });
             break;
           case "post_reply_interactions":
-            var pr = p1PostReplies.find(function (r) { return r.idx === data.reply_index; });
+            var pr = p1PostReplies.find(function (r) {
+              return r.idx === data.reply_index;
+            });
             if (pr) {
-              if (data.action_type === "edit")   pr.text    = data.value;
+              if (data.action_type === "edit") pr.text = data.value;
               if (data.action_type === "delete") pr.deleted = true;
             }
             break;
@@ -191,17 +280,25 @@
             p1CommentReposts[data.comment_id] = data.reposted;
             break;
           case "comment_reports":
-            p1CommentReports.push({ cid: data.comment_id, reason: data.reason });
+            p1CommentReports.push({
+              cid: data.comment_id,
+              reason: data.reason,
+            });
             break;
           case "comment_replies":
-            p1CommentReplies.push({ cid: data.comment_id, idx: data.reply_index, text: data.body, deleted: false });
+            p1CommentReplies.push({
+              cid: data.comment_id,
+              idx: data.reply_index,
+              text: data.body,
+              deleted: false,
+            });
             break;
           case "comment_reply_interactions":
             var cr = p1CommentReplies.find(function (r) {
               return r.cid === data.comment_id && r.idx === data.reply_index;
             });
             if (cr) {
-              if (data.action_type === "edit")   cr.text    = data.value;
+              if (data.action_type === "edit") cr.text = data.value;
               if (data.action_type === "delete") cr.deleted = true;
             }
             break;
@@ -219,7 +316,9 @@
           .eq("group_code", GROUP)
           .single();
         if (grpRes.error || !grpRes.data) {
-          showError("Could not load study configuration. Please contact the researcher.");
+          showError(
+            "Could not load study configuration. Please contact the researcher.",
+          );
           return;
         }
         condition = grpRes.data.format;
@@ -227,7 +326,9 @@
 
         var itemsRes = await db.from("items").select("*");
         if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
-          showError("Could not load study content. Please contact the researcher.");
+          showError(
+            "Could not load study content. Please contact the researcher.",
+          );
           return;
         }
         allItemsCache = itemsRes.data;
@@ -236,7 +337,9 @@
           return i.stance === stance && i.is_main_stimulus;
         });
         if (!mainCandidates.length) {
-          showError("Could not load study content. Please contact the researcher.");
+          showError(
+            "Could not load study content. Please contact the researcher.",
+          );
           return;
         }
         currentItem = shuffle(mainCandidates)[0];
@@ -249,12 +352,20 @@
         allSimilarities = simRes.data || [];
 
         var byId = {};
-        allItemsCache.forEach(function (i) { byId[i.id] = i; });
-        var eligible = new Set(allItemsCache.map(function (i) { return i.id; }));
+        allItemsCache.forEach(function (i) {
+          byId[i.id] = i;
+        });
+        var eligible = new Set(
+          allItemsCache.map(function (i) {
+            return i.id;
+          }),
+        );
         eligible.delete(currentItem.id);
         recoItems = rankedSimilar(allSimilarities, currentItem.id, eligible)
           .slice(0, RECO_COUNT)
-          .map(function (id) { return byId[id]; })
+          .map(function (id) {
+            return byId[id];
+          })
           .filter(Boolean);
 
         var cmtRes = await db
@@ -264,7 +375,11 @@
           .order("display_order");
         allComments = cmtRes.data || [];
         allComments.forEach(function (c) {
-          commentStates[c.id] = { liked: false, reposted: false, replyCount: 0 };
+          commentStates[c.id] = {
+            liked: false,
+            reposted: false,
+            replyCount: 0,
+          };
         });
 
         wirePostBar();
@@ -282,11 +397,19 @@
           var recoUser = (item.author || "?").replace(/^@/, "");
           card.innerHTML =
             '<div class="reco-card-header">' +
-            '<div class="reco-avatar">' + esc(recoUser[0].toUpperCase()) + "</div>" +
-            '<span class="reco-author">@' + esc(recoUser) + "</span>" +
+            '<div class="reco-avatar">' +
+            esc(recoUser[0].toUpperCase()) +
             "</div>" +
-            '<div class="reco-preview">' + esc(recoPreview(item)) + "</div>";
-          card.addEventListener("click", function () { handleRecoClick(item.id); });
+            '<span class="reco-author">@' +
+            esc(recoUser) +
+            "</span>" +
+            "</div>" +
+            '<div class="reco-preview">' +
+            esc(recoPreview(item)) +
+            "</div>";
+          card.addEventListener("click", function () {
+            handleRecoClick(item.id);
+          });
           list.appendChild(card);
         });
       }
@@ -304,14 +427,23 @@
       function handleContinue() {
         if (continueFired) return;
         continueFired = true;
-        window.parent.postMessage({ type: "phase1_complete", data: buildPayload() }, "*");
+        window.parent.postMessage(
+          { type: "phase1_complete", data: buildPayload() },
+          "*",
+        );
       }
 
-      document.getElementById("reco-close").addEventListener("click", closeRecoModal);
-      document.getElementById("reco-ok").addEventListener("click", closeRecoModal);
-      document.getElementById("reco-modal").addEventListener("click", function (e) {
-        if (e.target.id === "reco-modal") closeRecoModal();
-      });
+      document
+        .getElementById("reco-close")
+        .addEventListener("click", closeRecoModal);
+      document
+        .getElementById("reco-ok")
+        .addEventListener("click", closeRecoModal);
+      document
+        .getElementById("reco-modal")
+        .addEventListener("click", function (e) {
+          if (e.target.id === "reco-modal") closeRecoModal();
+        });
 
       init();
     </script>
