@@ -253,12 +253,12 @@ function buildComment(c) {
   var repostBtn = mkAction(SVG_REPOST);
   var reportBtn = mkAction(SVG_REPORT);
 
-  likeBtn.style.color = st.liked ? "#f91880" : "#536471";
-  repostBtn.style.color = st.reposted ? "#00ba7c" : "#536471";
+  likeBtn.style.color = st.liked ? "#DC267F" : "#536471";
+  repostBtn.style.color = st.reposted ? "#648FFF" : "#536471";
 
   likeBtn.addEventListener("click", function () {
     st.liked = !st.liked;
-    likeBtn.style.color = st.liked ? "#f91880" : "#536471";
+    likeBtn.style.color = st.liked ? "#DC267F" : "#536471";
     queueWrite("comment_likes", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -270,7 +270,7 @@ function buildComment(c) {
 
   repostBtn.addEventListener("click", function () {
     st.reposted = !st.reposted;
-    repostBtn.style.color = st.reposted ? "#00ba7c" : "#536471";
+    repostBtn.style.color = st.reposted ? "#648FFF" : "#536471";
     queueWrite("comment_reposts", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -396,7 +396,7 @@ function renderCommentReply(container, replyObj, cmtState, commentId) {
 
   likeBtn.addEventListener("click", function () {
     liked = !liked;
-    likeBtn.style.color = liked ? "#f91880" : "#536471";
+    likeBtn.style.color = liked ? "#DC267F" : "#536471";
     queueWrite("comment_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -409,7 +409,7 @@ function renderCommentReply(container, replyObj, cmtState, commentId) {
 
   repostBtn.addEventListener("click", function () {
     reposted = !reposted;
-    repostBtn.style.color = reposted ? "#00ba7c" : "#536471";
+    repostBtn.style.color = reposted ? "#648FFF" : "#536471";
     queueWrite("comment_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -588,7 +588,7 @@ function renderPostReply(container, replyObj, atTop) {
 
   likeBtn.addEventListener("click", function () {
     liked = !liked;
-    likeBtn.style.color = liked ? "#f91880" : "#536471";
+    likeBtn.style.color = liked ? "#DC267F" : "#536471";
     queueWrite("post_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -600,7 +600,7 @@ function renderPostReply(container, replyObj, atTop) {
 
   repostBtn.addEventListener("click", function () {
     reposted = !reposted;
-    repostBtn.style.color = reposted ? "#00ba7c" : "#536471";
+    repostBtn.style.color = reposted ? "#648FFF" : "#536471";
     queueWrite("post_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -780,7 +780,7 @@ function renderPostSubReply(container, replyObj) {
 
   likeBtn.addEventListener("click", function () {
     liked = !liked;
-    likeBtn.style.color = liked ? "#f91880" : "#536471";
+    likeBtn.style.color = liked ? "#DC267F" : "#536471";
     queueWrite("post_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -792,7 +792,7 @@ function renderPostSubReply(container, replyObj) {
 
   repostBtn.addEventListener("click", function () {
     reposted = !reposted;
-    repostBtn.style.color = reposted ? "#00ba7c" : "#536471";
+    repostBtn.style.color = reposted ? "#648FFF" : "#536471";
     queueWrite("post_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -956,7 +956,7 @@ function wirePostBar() {
 
 function handlePostLike() {
   postLiked = !postLiked;
-  document.getElementById("btn-like").style.color = postLiked ? "#f91880" : "#536471";
+  document.getElementById("btn-like").style.color = postLiked ? "#DC267F" : "#536471";
   document.getElementById("like-label").textContent = postLiked ? "Liked" : "Like";
   queueWrite("post_likes", {
     pid: PID,
@@ -968,7 +968,7 @@ function handlePostLike() {
 
 function handlePostRepost() {
   postReposted = !postReposted;
-  document.getElementById("btn-repost").style.color = postReposted ? "#00ba7c" : "#536471";
+  document.getElementById("btn-repost").style.color = postReposted ? "#648FFF" : "#536471";
   document.getElementById("repost-label").textContent = postReposted ? "Reposted" : "Repost";
   queueWrite("post_reposts", {
     pid: PID,
@@ -1027,7 +1027,7 @@ function openReportModal() {
           reason: r.id,
         });
       }
-      if (reportTarget.btn) reportTarget.btn.style.color = "#f4212e";
+      if (reportTarget.btn) reportTarget.btn.style.color = "#FFB000";
       document.getElementById("report-body").style.display = "none";
       document.getElementById("report-thanks").style.display = "block";
       setTimeout(closeReportModal, 1400);
