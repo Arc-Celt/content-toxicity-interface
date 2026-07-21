@@ -3,7 +3,7 @@ var SUPABASE_URL = "https://nqyfdluxupdxebziunfr.supabase.co";
 var SUPABASE_KEY = "sb_publishable_Bft66-E0T9pF5oSVcnZ7_A_22XaT3FH";
 var INITIAL_COMMENTS = 2;
 var COMMENTS_PER_LOAD = 2;
-var RECO_COUNT = 5;
+var RECO_COUNT = 4;
 
 var REPORT_REASONS = [
   { id: "spam_misleading", label: "Spam or misleading" },
@@ -163,7 +163,8 @@ function render() {
 
 function renderPost() {
   var postUser = (currentItem.author || "user").replace(/^@/, "");
-  document.getElementById("post-avatar").textContent = postUser[0].toUpperCase();
+  document.getElementById("post-avatar").textContent =
+    postUser[0].toUpperCase();
   document.getElementById("post-name").textContent = "@" + postUser;
   document.getElementById("post-handle").textContent = "";
   document.getElementById("post-title").textContent =
@@ -235,7 +236,9 @@ function buildComment(c) {
   var header = document.createElement("div");
   header.style.cssText = "font-size:14px;";
   header.innerHTML =
-    '<span style="font-weight:700; color:#0f1419;">@' + esc(username) + "</span>";
+    '<span style="font-weight:700; color:#0f1419;">@' +
+    esc(username) +
+    "</span>";
 
   var textEl = document.createElement("div");
   textEl.style.cssText =
@@ -939,8 +942,12 @@ function recoPreview(item) {
 // at fetch time, so no client-side sort is needed here.
 function rankedSimilar(allSimilarities, itemId, eligibleIds) {
   return allSimilarities
-    .filter(function (r) { return r.item_id_a === itemId && eligibleIds.has(r.item_id_b); })
-    .map(function (r) { return r.item_id_b; });
+    .filter(function (r) {
+      return r.item_id_a === itemId && eligibleIds.has(r.item_id_b);
+    })
+    .map(function (r) {
+      return r.item_id_b;
+    });
 }
 
 // ---- POST BAR ----
@@ -956,8 +963,12 @@ function wirePostBar() {
 
 function handlePostLike() {
   postLiked = !postLiked;
-  document.getElementById("btn-like").style.color = postLiked ? "#DC267F" : "#536471";
-  document.getElementById("like-label").textContent = postLiked ? "Liked" : "Like";
+  document.getElementById("btn-like").style.color = postLiked
+    ? "#DC267F"
+    : "#536471";
+  document.getElementById("like-label").textContent = postLiked
+    ? "Liked"
+    : "Like";
   queueWrite("post_likes", {
     pid: PID,
     session_type: SESSION_TYPE,
@@ -968,8 +979,12 @@ function handlePostLike() {
 
 function handlePostRepost() {
   postReposted = !postReposted;
-  document.getElementById("btn-repost").style.color = postReposted ? "#648FFF" : "#536471";
-  document.getElementById("repost-label").textContent = postReposted ? "Reposted" : "Repost";
+  document.getElementById("btn-repost").style.color = postReposted
+    ? "#648FFF"
+    : "#536471";
+  document.getElementById("repost-label").textContent = postReposted
+    ? "Reposted"
+    : "Repost";
   queueWrite("post_reposts", {
     pid: PID,
     session_type: SESSION_TYPE,
@@ -1009,7 +1024,9 @@ function openReportModal() {
     var btn = document.createElement("button");
     btn.className = "report-reason-btn";
     btn.innerHTML =
-      "<span>" + esc(r.label) + '</span><span style="color:#536471;">&rsaquo;</span>';
+      "<span>" +
+      esc(r.label) +
+      '</span><span style="color:#536471;">&rsaquo;</span>';
     btn.addEventListener("click", function () {
       if (reportTarget.type === "post") {
         queueWrite("post_reports", {
@@ -1057,7 +1074,9 @@ function esc(s) {
     .replace(/"/g, "&quot;");
 }
 function youtubeId(url) {
-  var m = String(url).match(/(?:youtu\.be\/|[?&]v=|embed\/)([A-Za-z0-9_-]{11})/);
+  var m = String(url).match(
+    /(?:youtu\.be\/|[?&]v=|embed\/)([A-Za-z0-9_-]{11})/,
+  );
   return m ? m[1] : null;
 }
 function shuffle(arr) {
@@ -1092,7 +1111,9 @@ document.getElementById("view-more-btn").addEventListener("click", function () {
 });
 
 document.getElementById("btn-like").addEventListener("click", handlePostLike);
-document.getElementById("btn-repost").addEventListener("click", handlePostRepost);
+document
+  .getElementById("btn-repost")
+  .addEventListener("click", handlePostRepost);
 document.getElementById("btn-report").addEventListener("click", function () {
   reportTarget = {
     type: "post",
@@ -1118,7 +1139,9 @@ postTa.addEventListener("input", function () {
 });
 postSend.addEventListener("click", handlePostReply);
 
-document.getElementById("report-close").addEventListener("click", closeReportModal);
+document
+  .getElementById("report-close")
+  .addEventListener("click", closeReportModal);
 document.getElementById("report-modal").addEventListener("click", function (e) {
   if (e.target.id === "report-modal") closeReportModal();
 });
