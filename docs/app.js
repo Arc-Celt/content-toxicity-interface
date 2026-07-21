@@ -1,7 +1,6 @@
 // ---- CONFIG (shared) ----
-var SUPABASE_URL = "https://kduahomjytwviokyvqvp.supabase.co";
-var SUPABASE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdWFob21qeXR3dmlva3l2cXZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MDkzNTIsImV4cCI6MjA5NzE4NTM1Mn0.ZwRemPh4GPsEE_lioue8e5uxHotjfMzXJdOjN1373dc";
+var SUPABASE_URL = "https://nqyfdluxupdxebziunfr.supabase.co";
+var SUPABASE_KEY = "sb_publishable_Bft66-E0T9pF5oSVcnZ7_A_22XaT3FH";
 var INITIAL_COMMENTS = 2;
 var COMMENTS_PER_LOAD = 2;
 var RECO_COUNT = 3;
@@ -35,6 +34,8 @@ var GROUP = params.get("group") || "A1";
 var currentItem = null;
 var allComments = [];
 var recoItems = [];
+var allItemsCache = [];
+var allSimilarities = [];
 var condition = null;
 var visibleCount = INITIAL_COMMENTS;
 var expansionIdx = 0;
@@ -929,7 +930,16 @@ function recoPreview(item) {
     text = item.transcript;
   }
   var words = text.trim().split(/\s+/);
-  return words.length > 100 ? words.slice(0, 100).join(" ") + "…" : text;
+  return words.length > 25 ? words.slice(0, 25).join(" ") + "…" : text;
+}
+
+// Ranks item_id_b values by similarity to itemId, restricted to eligibleIds.
+// allSimilarities must already be ordered by (item_id_a, cosine_similarity desc)
+// at fetch time, so no client-side sort is needed here.
+function rankedSimilar(allSimilarities, itemId, eligibleIds) {
+  return allSimilarities
+    .filter(function (r) { return r.item_id_a === itemId && eligibleIds.has(r.item_id_b); })
+    .map(function (r) { return r.item_id_b; });
 }
 
 // ---- POST BAR ----

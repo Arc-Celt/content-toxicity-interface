@@ -241,28 +241,35 @@
         condition = grpRes.data.format;
         var stance = grpRes.data.stance;
 
-        var itemsRes = await db.from("items").select("*").eq("stance", stance);
+        var itemsRes = await db.from("items").select("*");
         if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
           showError("Could not load study content. Please contact the researcher.");
           return;
         }
         allItemsCache = itemsRes.data;
 
+        var simRes = await db
+          .from("item_similarities")
+          .select("item_id_a, item_id_b, cosine_similarity")
+          .order("item_id_a")
+          .order("cosine_similarity", { ascending: false });
+        allSimilarities = simRes.data || [];
+
         // Phase1 context from URL params
-        var p1ItemId     = params.get("p1_item_id")      || "";
-        var p1FirstClick = params.get("p1_first_click")  || "";
+        var p1ItemId    = params.get("p1_item_id")     || "";
+        var p1LastClick = params.get("p1_last_click")  || "";
 
         // Parse all phase1 sidebar clicks to build priority list
         var p1ClicksRaw = params.get("p1_sidebar_clicks_raw") || "";
         var p1AllClicks = p1ClicksRaw ? p1ClicksRaw.split(",").filter(Boolean) : [];
-        // Priority = all clicks after the first (first becomes the main post)
-        p1PriorityClicks = p1AllClicks.filter(function (id) { return id !== p1FirstClick; });
+        // Priority = all clicks except the last (last becomes the main post)
+        p1PriorityClicks = p1AllClicks.filter(function (id) { return id !== p1LastClick; });
 
         if (p1ItemId) viewedItemIds.add(p1ItemId);
 
         var pool = shuffle(allItemsCache.slice());
-        if (p1FirstClick) {
-          currentItem = allItemsCache.find(function (i) { return i.id === p1FirstClick; })
+        if (p1LastClick) {
+          currentItem = allItemsCache.find(function (i) { return i.id === p1LastClick; })
             || pool.find(function (i) { return !viewedItemIds.has(i.id); })
             || pool[0];
         } else {
@@ -295,12 +302,18 @@
         var unviewed = allItemsCache.filter(function (i) {
           return i.id !== currentItem.id && !viewedItemIds.has(i.id);
         });
-        // Phase1 sidebar clicks (after the first) appear at top in order, rest shuffled
+        // Phase1 sidebar clicks (after the last) appear at top in order, rest ranked by
+        // content similarity to currentItem (stance no longer factors in)
         var prioritySet = new Set(p1PriorityClicks);
         var priority = p1PriorityClicks
           .map(function (id) { return unviewed.find(function (i) { return i.id === id; }); })
           .filter(Boolean);
-        var rest = shuffle(unviewed.filter(function (i) { return !prioritySet.has(i.id); }));
+        var restPool = unviewed.filter(function (i) { return !prioritySet.has(i.id); });
+        var restById = {};
+        restPool.forEach(function (i) { restById[i.id] = i; });
+        var rest = rankedSimilar(allSimilarities, currentItem.id, new Set(Object.keys(restById)))
+          .map(function (id) { return restById[id]; })
+          .filter(Boolean);
         recoItems = priority.concat(rest).slice(0, RECO_COUNT);
       }
 

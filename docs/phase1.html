@@ -130,7 +130,7 @@
       function buildPayload() {
         return {
           p1_item_id:            currentItem ? currentItem.id : "",
-          p1_first_click:        p1SidebarClicks[0] || "",
+          p1_last_click:         p1SidebarClicks[p1SidebarClicks.length - 1] || "",
           p1_post_liked:         postLiked    ? "1" : "0",
           p1_post_reposted:      postReposted ? "1" : "0",
           p1_post_reported:      p1PostReportedReason,
@@ -225,14 +225,37 @@
         condition = grpRes.data.format;
         var stance = grpRes.data.stance;
 
-        var itemsRes = await db.from("items").select("*").eq("stance", stance);
+        var itemsRes = await db.from("items").select("*");
         if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
           showError("Could not load study content. Please contact the researcher.");
           return;
         }
-        var pool = shuffle(itemsRes.data);
-        currentItem = pool[0];
-        recoItems = pool.slice(1, RECO_COUNT + 1);
+        allItemsCache = itemsRes.data;
+
+        var mainCandidates = allItemsCache.filter(function (i) {
+          return i.stance === stance && i.is_main_stimulus;
+        });
+        if (!mainCandidates.length) {
+          showError("Could not load study content. Please contact the researcher.");
+          return;
+        }
+        currentItem = shuffle(mainCandidates)[0];
+
+        var simRes = await db
+          .from("item_similarities")
+          .select("item_id_a, item_id_b, cosine_similarity")
+          .order("item_id_a")
+          .order("cosine_similarity", { ascending: false });
+        allSimilarities = simRes.data || [];
+
+        var byId = {};
+        allItemsCache.forEach(function (i) { byId[i.id] = i; });
+        var eligible = new Set(allItemsCache.map(function (i) { return i.id; }));
+        eligible.delete(currentItem.id);
+        recoItems = rankedSimilar(allSimilarities, currentItem.id, eligible)
+          .slice(0, RECO_COUNT)
+          .map(function (id) { return byId[id]; })
+          .filter(Boolean);
 
         var cmtRes = await db
           .from("comments")
