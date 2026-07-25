@@ -16,12 +16,18 @@ var REPORT_REASONS = [
 // ---- ICON SVG STRINGS ----
 var SVG_LIKE =
   '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"></path><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>';
+var SVG_LIKE_ON =
+  '<svg fill="currentColor" height="18" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"></path><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3z"></path></svg>';
 var SVG_REPLY =
   '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
 var SVG_REPOST =
   '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>';
+var SVG_REPOST_ON =
+  '<svg height="18" style="overflow:visible" viewBox="0 0 24 24" width="18"><circle cx="12" cy="12" fill="currentColor" r="17"></circle><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></g></svg>';
 var SVG_REPORT =
   '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>';
+var SVG_REPORT_ON =
+  '<svg fill="currentColor" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>';
 
 // ---- SUPABASE + URL PARAMS ----
 var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -259,11 +265,16 @@ function buildComment(c) {
   var reportBtn = mkAction(SVG_REPORT);
 
   likeBtn.style.color = st.liked ? "#DC267F" : "#536471";
+  likeBtn.querySelector("svg").outerHTML = st.liked ? SVG_LIKE_ON : SVG_LIKE;
   repostBtn.style.color = st.reposted ? "#648FFF" : "#536471";
+  repostBtn.querySelector("svg").outerHTML = st.reposted
+    ? SVG_REPOST_ON
+    : SVG_REPOST;
 
   likeBtn.addEventListener("click", function () {
     st.liked = !st.liked;
     likeBtn.style.color = st.liked ? "#DC267F" : "#536471";
+    likeBtn.querySelector("svg").outerHTML = st.liked ? SVG_LIKE_ON : SVG_LIKE;
     queueWrite("comment_likes", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -276,6 +287,9 @@ function buildComment(c) {
   repostBtn.addEventListener("click", function () {
     st.reposted = !st.reposted;
     repostBtn.style.color = st.reposted ? "#648FFF" : "#536471";
+    repostBtn.querySelector("svg").outerHTML = st.reposted
+      ? SVG_REPOST_ON
+      : SVG_REPOST;
     queueWrite("comment_reposts", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -402,6 +416,7 @@ function renderCommentReply(container, replyObj, cmtState, commentId) {
   likeBtn.addEventListener("click", function () {
     liked = !liked;
     likeBtn.style.color = liked ? "#DC267F" : "#536471";
+    likeBtn.querySelector("svg").outerHTML = liked ? SVG_LIKE_ON : SVG_LIKE;
     queueWrite("comment_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -415,6 +430,9 @@ function renderCommentReply(container, replyObj, cmtState, commentId) {
   repostBtn.addEventListener("click", function () {
     reposted = !reposted;
     repostBtn.style.color = reposted ? "#648FFF" : "#536471";
+    repostBtn.querySelector("svg").outerHTML = reposted
+      ? SVG_REPOST_ON
+      : SVG_REPOST;
     queueWrite("comment_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -594,6 +612,7 @@ function renderPostReply(container, replyObj, atTop) {
   likeBtn.addEventListener("click", function () {
     liked = !liked;
     likeBtn.style.color = liked ? "#DC267F" : "#536471";
+    likeBtn.querySelector("svg").outerHTML = liked ? SVG_LIKE_ON : SVG_LIKE;
     queueWrite("post_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -606,6 +625,9 @@ function renderPostReply(container, replyObj, atTop) {
   repostBtn.addEventListener("click", function () {
     reposted = !reposted;
     repostBtn.style.color = reposted ? "#648FFF" : "#536471";
+    repostBtn.querySelector("svg").outerHTML = reposted
+      ? SVG_REPOST_ON
+      : SVG_REPOST;
     queueWrite("post_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -786,6 +808,7 @@ function renderPostSubReply(container, replyObj) {
   likeBtn.addEventListener("click", function () {
     liked = !liked;
     likeBtn.style.color = liked ? "#DC267F" : "#536471";
+    likeBtn.querySelector("svg").outerHTML = liked ? SVG_LIKE_ON : SVG_LIKE;
     queueWrite("post_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -798,6 +821,9 @@ function renderPostSubReply(container, replyObj) {
   repostBtn.addEventListener("click", function () {
     reposted = !reposted;
     repostBtn.style.color = reposted ? "#648FFF" : "#536471";
+    repostBtn.querySelector("svg").outerHTML = reposted
+      ? SVG_REPOST_ON
+      : SVG_REPOST;
     queueWrite("post_reply_interactions", {
       pid: PID,
       session_type: SESSION_TYPE,
@@ -968,6 +994,9 @@ function handlePostLike() {
   document.getElementById("btn-like").style.color = postLiked
     ? "#DC267F"
     : "#536471";
+  document.getElementById("btn-like").querySelector("svg").outerHTML = postLiked
+    ? SVG_LIKE_ON
+    : SVG_LIKE;
   document.getElementById("like-label").textContent = postLiked
     ? "Liked"
     : "Like";
@@ -984,6 +1013,8 @@ function handlePostRepost() {
   document.getElementById("btn-repost").style.color = postReposted
     ? "#648FFF"
     : "#536471";
+  document.getElementById("btn-repost").querySelector("svg").outerHTML =
+    postReposted ? SVG_REPOST_ON : SVG_REPOST;
   document.getElementById("repost-label").textContent = postReposted
     ? "Reposted"
     : "Repost";
@@ -1046,7 +1077,14 @@ function openReportModal() {
           reason: r.id,
         });
       }
-      if (reportTarget.btn) reportTarget.btn.style.color = "#FFB000";
+      if (reportTarget.btn) {
+        reportTarget.btn.style.color = "#FFB000";
+        reportTarget.btn.querySelector("svg").outerHTML = SVG_REPORT_ON;
+      }
+      if (reportTarget.type === "post") {
+        var reportLabel = document.getElementById("report-label");
+        if (reportLabel) reportLabel.textContent = "Reported";
+      }
       document.getElementById("report-body").style.display = "none";
       document.getElementById("report-thanks").style.display = "block";
       setTimeout(closeReportModal, 1400);

@@ -51,7 +51,7 @@
                   <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
                   <line x1="4" x2="4" y1="22" y2="15" />
                 </svg>
-                Report
+                <span id="report-label">Report</span>
               </button>
             </div>
             <div class="reply-box">
@@ -371,10 +371,14 @@
         ta.style.minHeight = "38px";
         send.style.display = "none";
         document.getElementById("btn-like").style.color = "#536471";
+        document.getElementById("btn-like").querySelector("svg").outerHTML = SVG_LIKE;
         document.getElementById("like-label").textContent = "Like";
         document.getElementById("btn-repost").style.color = "#536471";
+        document.getElementById("btn-repost").querySelector("svg").outerHTML = SVG_REPOST;
         document.getElementById("repost-label").textContent = "Repost";
         document.getElementById("btn-report").style.color = "#536471";
+        document.getElementById("btn-report").querySelector("svg").outerHTML = SVG_REPORT;
+        document.getElementById("report-label").textContent = "Report";
       }
 
       function renderSidebar() {
