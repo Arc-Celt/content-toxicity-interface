@@ -192,6 +192,7 @@
       var p1SidebarClicks = []; // [itemId, …] in order
       var p1CommentExpansions = 0;
       var p1PostReportedReason = "";
+      var p1RecoList = []; // [{id, stance, pos}] — 2+2 reco list as displayed
 
       function buildPayload() {
         return {
@@ -232,6 +233,7 @@
           ),
           p1_sidebar_clicks: JSON.stringify(p1SidebarClicks),
           p1_sidebar_clicks_raw: p1SidebarClicks.join(","),
+          p1_reco_list: JSON.stringify(p1RecoList),
         };
       }
 
@@ -351,22 +353,20 @@
           .order("cosine_similarity", { ascending: false });
         allSimilarities = simRes.data || [];
 
-        var byId = {};
-        allItemsCache.forEach(function (i) {
-          byId[i.id] = i;
+        // Balanced reco list: 2 anti + 2 pro most similar to the main stimulus,
+        // shuffled so display order carries no stance signal. Balance makes
+        // sidebar clicks a valid revealed-preference signal for phase 2.
+        var recoPool = allItemsCache.filter(function (i) {
+          return i.id !== currentItem.id;
         });
-        var eligible = new Set(
-          allItemsCache.map(function (i) {
-            return i.id;
-          }),
+        recoItems = shuffle(
+          topByStance(currentItem.id, recoPool, 1, RECO_COUNT / 2).concat(
+            topByStance(currentItem.id, recoPool, -1, RECO_COUNT / 2),
+          ),
         );
-        eligible.delete(currentItem.id);
-        recoItems = rankedSimilar(allSimilarities, currentItem.id, eligible)
-          .slice(0, RECO_COUNT)
-          .map(function (id) {
-            return byId[id];
-          })
-          .filter(Boolean);
+        p1RecoList = recoItems.map(function (it, idx) {
+          return { id: it.id, stance: it.stance, pos: idx };
+        });
 
         var cmtRes = await db
           .from("comments")

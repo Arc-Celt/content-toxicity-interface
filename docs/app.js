@@ -35,6 +35,13 @@ var params = new URLSearchParams(window.location.search);
 var PID = params.get("pid") || "test_" + Date.now();
 var GROUP = params.get("group") || "A1";
 
+// ---- STANCE RECOMMENDER CONFIG ----
+// Stance score S = PRE_PARTY prior + weighted behaviors; sign(S) picks which
+// stance gets RECO_ALIGNED of the RECO_COUNT sidebar slots (S=0 -> balanced).
+var STANCE_WEIGHTS = { strong: 2, click: 1 }; // like/repost/report vs sidebar clicks
+var RECO_ALIGNED = 3; // aligned posts per 3+1 recommendation list
+var PRE_PARTY = parseFloat(params.get("pre_party")) || 0; // party ladder ±1/±0.5/0
+
 // ---- SHARED STATE ----
 // SESSION_TYPE and CONTINUE_DELAY_MS are declared by each page script.
 var currentItem = null;
@@ -976,6 +983,105 @@ function rankedSimilar(allSimilarities, itemId, eligibleIds) {
     .map(function (r) {
       return r.item_id_b;
     });
+}
+
+// ---- STANCE-ADAPTIVE RECOMMENDATION LISTS ----
+// Stance of an item as a sign: pro-immigration +1, anti-immigration -1.
+function stanceSign(item) {
+  return item.stance === "pro_immigration" ? 1 : -1;
+}
+
+// Top-n items of one stance from pool, ranked by similarity to anchorId.
+function topByStance(anchorId, pool, sign, n) {
+  var byId = {};
+  pool.forEach(function (i) {
+    if (stanceSign(i) === sign) byId[i.id] = i;
+  });
+  return rankedSimilar(allSimilarities, anchorId, new Set(Object.keys(byId)))
+    .slice(0, n)
+    .map(function (id) {
+      return byId[id];
+    });
+}
+
+// Builds the sidebar recommendation list from the stance score S:
+//   S > 0 -> RECO_ALIGNED pro + rest anti; S < 0 mirrored; S === 0 -> 2+2.
+// pinned items (phase-1 clicks, unviewed) always lead and consume their
+// stance's quota. Exhausted buckets backfill from whatever remains. The
+// counter item lands at a random slot within the non-pinned tail; its final
+// index is reported as meta.counterPos (-1 when none / balanced mode).
+function buildRecoList(S, anchorId, pool, pinned) {
+  var total = RECO_COUNT;
+  var alignSign = S >= 0 ? 1 : -1;
+  var quota = {};
+  quota[alignSign] = S === 0 ? total / 2 : RECO_ALIGNED;
+  quota[-alignSign] = total - quota[alignSign];
+
+  var recoList = (pinned || []).slice(0, total);
+  recoList.forEach(function (it) {
+    var s = stanceSign(it);
+    if (quota[s] > 0) quota[s]--;
+    else if (quota[-s] > 0) quota[-s]--; // over-quota pins eat the other bucket
+  });
+
+  var pinnedIds = new Set(
+    recoList.map(function (i) {
+      return i.id;
+    }),
+  );
+  var rest = pool.filter(function (i) {
+    return !pinnedIds.has(i.id);
+  });
+
+  var alignedFill = topByStance(anchorId, rest, alignSign, quota[alignSign]);
+  var counterFill = topByStance(anchorId, rest, -alignSign, quota[-alignSign]);
+
+  // backfill if a stance bucket ran short
+  var short = total - recoList.length - alignedFill.length - counterFill.length;
+  if (short > 0) {
+    var used = new Set(
+      recoList.concat(alignedFill, counterFill).map(function (i) {
+        return i.id;
+      }),
+    );
+    var spareById = {};
+    rest.forEach(function (i) {
+      if (!used.has(i.id)) spareById[i.id] = i;
+    });
+    alignedFill = alignedFill.concat(
+      rankedSimilar(allSimilarities, anchorId, new Set(Object.keys(spareById)))
+        .slice(0, short)
+        .map(function (id) {
+          return spareById[id];
+        }),
+    );
+  }
+
+  var tail;
+  var counterPos = -1;
+  if (S !== 0 && counterFill.length) {
+    tail = alignedFill.slice();
+    var at = Math.floor(Math.random() * (tail.length + 1));
+    tail.splice(at, 0, counterFill[0]);
+    counterPos = recoList.length + at;
+    tail = tail.concat(counterFill.slice(1));
+  } else {
+    // balanced mode: shuffle so stance order carries no signal
+    tail = shuffle(alignedFill.concat(counterFill));
+  }
+
+  var items = recoList.concat(tail).slice(0, total);
+  return {
+    items: items,
+    meta: {
+      S: S,
+      mode: S === 0 ? "2+2" : "3+1",
+      counterPos: counterPos,
+      items: items.map(function (i) {
+        return { id: i.id, stance: i.stance };
+      }),
+    },
+  };
 }
 
 // ---- POST BAR ----
