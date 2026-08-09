@@ -35,6 +35,31 @@ var params = new URLSearchParams(window.location.search);
 var PID = params.get("pid") || "test_" + Date.now();
 var GROUP = params.get("group") || "A1";
 
+// ---- CONTENT CACHE ----
+// items/item_similarities
+var CONTENT_VERSION = "1";
+
+function loadCached(key) {
+  try {
+    var raw = localStorage.getItem(key);
+    var parsed = raw && JSON.parse(raw);
+    return parsed && parsed.version === CONTENT_VERSION ? parsed.data : null;
+  } catch (e) {
+    return null; // storage unavailable/corrupted
+  }
+}
+
+function saveCached(key, data) {
+  try {
+    localStorage.setItem(
+      key,
+      JSON.stringify({ version: CONTENT_VERSION, data: data }),
+    );
+  } catch (e) {
+    // storage full or blocked (e.g. some private-browsing modes) -- harmless, just skip
+  }
+}
+
 // ---- STANCE RECOMMENDER CONFIG ----
 // Stance score S = PRE_PARTY prior + weighted behaviors; sign(S) picks which
 // stance gets RECO_ALIGNED of the RECO_COUNT sidebar slots (S=0 -> balanced).
