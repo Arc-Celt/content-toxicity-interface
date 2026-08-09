@@ -1082,18 +1082,23 @@ function buildRecoList(S, anchorId, pool, pinned) {
     );
   }
 
+  // The most similar aligned-to-S item on top
+  var topPick = alignedFill.length ? alignedFill[0] : null;
+  var alignedRest = topPick ? alignedFill.slice(1) : alignedFill;
+
   var tail;
   var counterPos = -1;
   if (S !== 0 && counterFill.length) {
-    tail = alignedFill.slice();
+    tail = alignedRest.slice();
     var at = Math.floor(Math.random() * (tail.length + 1));
     tail.splice(at, 0, counterFill[0]);
-    counterPos = recoList.length + at;
+    counterPos = recoList.length + (topPick ? 1 : 0) + at;
     tail = tail.concat(counterFill.slice(1));
   } else {
     // balanced mode: shuffle so stance order carries no signal
-    tail = shuffle(alignedFill.concat(counterFill));
+    tail = shuffle(alignedRest.concat(counterFill));
   }
+  if (topPick) tail.unshift(topPick);
 
   var items = recoList.concat(tail).slice(0, total);
   return {
@@ -1102,6 +1107,7 @@ function buildRecoList(S, anchorId, pool, pinned) {
       S: S,
       mode: S === 0 ? "2+2" : "3+1",
       counterPos: counterPos,
+      topPickId: topPick ? topPick.id : null,
       items: items.map(function (i) {
         return { id: i.id, stance: i.stance };
       }),

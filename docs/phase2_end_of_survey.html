@@ -114,6 +114,7 @@
       var p1PostReported = false;
       var p2StanceTrace = []; // [{item, S, mode}] per reco-list build
       var p2RecoLists = []; // reco-list composition metadata per build
+      var recoTopPickId = null; // id of the item tagged "For You" in the current list
 
       // ---- PER-ITEM INTERACTION LOG ----
       var itemLogs = {};
@@ -284,8 +285,14 @@
         // Parse all phase1 sidebar clicks to build priority list
         var p1ClicksRaw = params.get("p1_sidebar_clicks_raw") || "";
         p1AllClicks = p1ClicksRaw ? p1ClicksRaw.split(",").filter(Boolean) : [];
-        // Priority = all clicks except the last (last becomes the main post)
+        // Priority = all clicks except the last (last becomes the main post).
+        // The most recently clicked of these (2nd-to-last click overall)
+        // leads the pinned block and gets the "For You" tag; the rest keep
+        // their original click order behind it.
         p1PriorityClicks = p1AllClicks.filter(function (id) { return id !== p1LastClick; });
+        if (p1PriorityClicks.length > 1) {
+          p1PriorityClicks.unshift(p1PriorityClicks.pop());
+        }
 
         if (p1ItemId) viewedItemIds.add(p1ItemId);
 
@@ -374,6 +381,10 @@
         var S = computeStance();
         var reco = buildRecoList(S, currentItem.id, unviewed, priority);
         recoItems = reco.items;
+        // "For You" goes on the most recently clicked pinned post when one is
+        // still unviewed; once none remain, it falls back to the algorithmic
+        // top-similarity aligned-to-S pick from buildRecoList.
+        recoTopPickId = priority.length ? priority[0].id : reco.meta.topPickId;
         p2StanceTrace.push({ item: currentItem.id, S: S, mode: reco.meta.mode });
         p2RecoLists.push(reco.meta);
       }
@@ -455,6 +466,7 @@
           card.className = "reco-card";
           var recoUser = (item.author || "?").replace(/^@/, "");
           card.innerHTML =
+            (item.id === recoTopPickId ? '<span class="reco-foryou-tag">For You</span>' : "") +
             '<div class="reco-card-header">' +
             '<div class="reco-avatar">' + esc(recoUser[0].toUpperCase()) + "</div>" +
             '<span class="reco-author">@' + esc(recoUser) + "</span>" +

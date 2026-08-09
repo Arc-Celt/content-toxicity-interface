@@ -211,6 +211,7 @@ body {
   padding: 0 8px 10px;
 }
 .reco-card {
+  position: relative;
   background: #fff;
   border: 1px solid #eff3f4;
   border-radius: 12px;
@@ -222,11 +223,28 @@ body {
 .reco-card:hover {
   background: #f7f9f9;
 }
+.reco-foryou-tag {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #1d9bf0;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
 .reco-card-header {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
+}
+/* reserve space so the tag never overlaps a long username */
+.reco-card:has(.reco-foryou-tag) .reco-card-header {
+  padding-right: 58px;
 }
 .reco-avatar {
   width: 30px;
