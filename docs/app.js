@@ -61,11 +61,37 @@ function saveCached(key, data) {
 }
 
 // ---- STANCE RECOMMENDER CONFIG ----
-// Stance score S = PRE_PARTY prior + weighted behaviors; sign(S) picks which
-// stance gets RECO_ALIGNED of the RECO_COUNT sidebar slots (S=0 -> balanced).
-var STANCE_WEIGHTS = { strong: 2, click: 1 }; // like/repost/report vs sidebar clicks
-var RECO_ALIGNED = 3; // aligned posts per 3+1 recommendation list
-var PRE_PARTY = parseFloat(params.get("pre_party")) || 0; // party ladder ±1/±0.5/0
+// Stance belief is Beta(alpha, beta), X = chance of leaning pro. The party
+// item sets the starting counts; behaviors add integer evidence points.
+// S = E(X) = alpha/(alpha+beta) decides the list.
+var STANCE_WEIGHTS = { strong: 2, click: 1 }; // like/repost/report vs clicks
+var STANCE_DECAY = 0.8; // per-action decay on prior signals
+var NEUTRAL_BAND = 0.05; // |S - 0.5| under 0.05 -> balanced 2+2 list
+var RECO_ALIGNED = 3; // aligned posts per 3+1 list
+var PRE_PARTY = parseFloat(params.get("pre_party")) || 0; // ±2/±1/0
+
+// Starting parameters. Gaps of 6/3/0 so a stated party lean survives two
+// opposing actions, a leaner survives one, and independents start balanced.
+function partyToPrior(preParty) {
+  if (preParty === 2) return { alpha: 9, beta: 3 }; // Democrat
+  if (preParty === 1) return { alpha: 6, beta: 3 }; // closer to Dem
+  if (preParty === -1) return { alpha: 3, beta: 6 }; // closer to Rep
+  if (preParty === -2) return { alpha: 3, beta: 9 }; // Republican
+  return { alpha: 3, beta: 3 }; // independent / neither
+}
+
+function betaMean(alpha, beta) {
+  return alpha / (alpha + beta);
+}
+
+function betaSD(alpha, beta) {
+  var n = alpha + beta;
+  return Math.sqrt((alpha * beta) / (n * n * (n + 1)));
+}
+
+function round4(x) {
+  return Math.round(x * 10000) / 10000;
+}
 
 // ---- SHARED STATE ----
 // SESSION_TYPE and CONTINUE_DELAY_MS are declared by each page script.
@@ -1029,20 +1055,17 @@ function topByStance(anchorId, pool, sign, n) {
     });
 }
 
-// Builds the sidebar recommendation list from the stance score S:
-//   S > 0 -> RECO_ALIGNED pro + rest anti; S < 0 mirrored; S === 0 -> 2+2.
-// pinned items (phase-1 clicks, unviewed) always lead and consume their
-// stance's quota. Exhausted buckets backfill from whatever remains. The
-// counter item lands at a random slot within the non-pinned tail; its final
-// index is reported as meta.counterPos (-1 when none / balanced mode). The
-// guaranteed top pick (meta.topPickId, tagged "For You" by the caller) is
-// the single most-similar aligned-to-S item when S != 0, or the single
-// most-similar item overall at exact neutrality (S === 0).
-function buildRecoList(S, anchorId, pool, pinned) {
+// Builds the sidebar list from Beta(alpha, beta): S > 0.5 -> 3 pro + 1 anti, vice versa, S within NEUTRAL_BAND of 0.5 -> 2+2 balanced.
+// Pinned phase-1 clicks lead and consume their stance quota; short buckets backfill.
+// meta.topPickId is the "For You" target; the counter item takes a random
+// slot in the tail (meta.counterPos, -1 if none).
+function buildRecoList(alpha, beta, anchorId, pool, pinned) {
   var total = RECO_COUNT;
-  var alignSign = S >= 0 ? 1 : -1;
+  var S = betaMean(alpha, beta);
+  var balanced = Math.abs(S - 0.5) < NEUTRAL_BAND; // too close to call
+  var alignSign = S >= 0.5 ? 1 : -1;
   var quota = {};
-  quota[alignSign] = S === 0 ? total / 2 : RECO_ALIGNED;
+  quota[alignSign] = balanced ? total / 2 : RECO_ALIGNED;
   quota[-alignSign] = total - quota[alignSign];
 
   var recoList = (pinned || []).slice(0, total);
@@ -1061,20 +1084,16 @@ function buildRecoList(S, anchorId, pool, pinned) {
     return !pinnedIds.has(i.id);
   });
 
-  // The guaranteed top pick ("For You" tag target):
-  //  - S != 0: single most-similar item within the aligned-to-S bucket.
-  //  - S == 0: no stance to align to, so pick the single most-similar item
-  //    overall (either stance).
+  // Top pick: most similar within the aligned bucket, or most similar overall at a tie
   var restById = {};
   rest.forEach(function (i) {
     restById[i.id] = i;
   });
-  var topPickEligible =
-    S !== 0
-      ? rest.filter(function (i) {
-          return stanceSign(i) === alignSign;
-        })
-      : rest;
+  var topPickEligible = balanced
+    ? rest
+    : rest.filter(function (i) {
+        return stanceSign(i) === alignSign;
+      });
   var topPickId = rankedSimilar(
     allSimilarities,
     anchorId,
@@ -1134,7 +1153,7 @@ function buildRecoList(S, anchorId, pool, pinned) {
 
   var tail;
   var counterPos = -1;
-  if (S !== 0 && counterFill.length) {
+  if (!balanced && counterFill.length) {
     tail = alignedFill.slice();
     var at = Math.floor(Math.random() * (tail.length + 1));
     tail.splice(at, 0, counterFill[0]);
@@ -1150,8 +1169,11 @@ function buildRecoList(S, anchorId, pool, pinned) {
   return {
     items: items,
     meta: {
-      S: S,
-      mode: S === 0 ? "2+2" : "3+1",
+      alpha: alpha,
+      beta: beta,
+      S: round4(S),
+      sd: round4(betaSD(alpha, beta)),
+      mode: balanced ? "2+2" : "3+1",
       counterPos: counterPos,
       topPickId: topPick ? topPick.id : null,
       items: items.map(function (i) {

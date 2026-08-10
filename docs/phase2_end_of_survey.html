@@ -169,6 +169,19 @@
       var p2RecoLists = []; // reco-list composition metadata per build
       var recoTopPickId = null; // id of the item tagged "For You" in the current list
 
+      // Ordered stance evidence, oldest first. Decay needs sequence, which the
+      // per-item logs do not preserve, so events are appended as they happen.
+      // Each entry is keyed so a toggle off (unlike/un-repost) removes it and
+      // a repeat of the same action cannot double count.
+      var stanceEvents = []; // [{key, sign, points}]
+
+      function setStanceEvent(key, on, sign, points) {
+        stanceEvents = stanceEvents.filter(function (e) {
+          return e.key !== key;
+        });
+        if (on) stanceEvents.push({ key: key, sign: sign, points: points });
+      }
+
       // ---- PER-ITEM INTERACTION LOG ----
       var itemLogs = {};
 
@@ -281,13 +294,32 @@
           case "post_likes":
             postLiked = data.liked;
             log.postLiked = data.liked;
+            setStanceEvent(
+              "like:" + currentItem.id,
+              data.liked,
+              stanceSign(currentItem),
+              STANCE_WEIGHTS.strong,
+            );
             break;
           case "post_reposts":
             postReposted = data.reposted;
             log.postReposted = data.reposted;
+            setStanceEvent(
+              "repost:" + currentItem.id,
+              data.reposted,
+              stanceSign(currentItem),
+              STANCE_WEIGHTS.strong,
+            );
             break;
           case "post_reports":
             log.postReportedReason = data.reason;
+            // a report counts against the post's own stance
+            setStanceEvent(
+              "report:" + currentItem.id,
+              true,
+              -stanceSign(currentItem),
+              STANCE_WEIGHTS.strong,
+            );
             break;
           case "post_replies":
             log.postReplies.push({
@@ -441,6 +473,7 @@
           };
         });
 
+        seedPhase1StanceEvents();
         loadRecos();
 
         var now = new Date().toISOString();
@@ -453,58 +486,70 @@
         sendState();
       }
 
-      // Stance score S, recomputed from scratch over the full current state:
-      // party prior (PRE_PARTY) + phase-1 behaviors (URL params) + phase-2
-      // behaviors (itemLogs final states + sidebar clicks). Pure recompute
-      // means toggles/undo are always consistent — no incremental bookkeeping.
-      function computeStance() {
-        var S = PRE_PARTY;
+      // Seeds stanceEvents with the phase-1 evidence carried over in the URL.
+      // Reactions to the main post are placed before the sidebar clicks: the
+      // params give no ordering between them, and this matches the usual flow
+      // of viewing the post first and browsing the sidebar after.
+      function seedPhase1StanceEvents() {
         var byId = {};
         allItemsCache.forEach(function (i) {
           byId[i.id] = i;
         });
-
-        // Phase 1: reactions to the main post (reports count opposite)
         var p1Item = byId[p1ItemId];
         if (p1Item) {
           var sig1 = stanceSign(p1Item);
-          if (p1PostLiked) S += STANCE_WEIGHTS.strong * sig1;
-          if (p1PostReposted) S += STANCE_WEIGHTS.strong * sig1;
-          if (p1PostReported) S -= STANCE_WEIGHTS.strong * sig1;
+          if (p1PostLiked) {
+            setStanceEvent("p1like", true, sig1, STANCE_WEIGHTS.strong);
+          }
+          if (p1PostReposted) {
+            setStanceEvent("p1repost", true, sig1, STANCE_WEIGHTS.strong);
+          }
+          if (p1PostReported) {
+            setStanceEvent("p1report", true, -sig1, STANCE_WEIGHTS.strong);
+          }
         }
-        // Phase 1: sidebar clicks from the balanced 2+2 reco list (unique items)
-        new Set(p1AllClicks).forEach(function (id) {
-          if (byId[id]) S += STANCE_WEIGHTS.click * stanceSign(byId[id]);
+        p1AllClicks.forEach(function (id) {
+          if (byId[id]) {
+            setStanceEvent(
+              "p1click:" + id,
+              true,
+              stanceSign(byId[id]),
+              STANCE_WEIGHTS.click,
+            );
+          }
+        });
+      }
+
+      // Beta(alpha, beta) belief over the ordered evidence, recomputed from
+      // scratch each call so undo stays consistent. Every action discounts the
+      // running totals by STANCE_DECAY first, so recent behavior dominates.
+      // A permanent Beta(1,1) floor keeps alpha and beta >= 1, so the posterior
+      // stays well formed however long the session runs.
+      function computeStance() {
+        var prior = partyToPrior(PRE_PARTY);
+        var priorA = prior.alpha - 1; // bonus above the (1,1) floor
+        var priorB = prior.beta - 1;
+        var evA = 0;
+        var evB = 0;
+
+        stanceEvents.forEach(function (e) {
+          priorA *= STANCE_DECAY;
+          priorB *= STANCE_DECAY;
+          evA *= STANCE_DECAY;
+          evB *= STANCE_DECAY;
+          if (e.sign > 0) evA += e.points;
+          else evB += e.points;
         });
 
-        // Phase 2: per-item final states (unliked posts contribute nothing)
-        Object.keys(itemLogs).forEach(function (id) {
-          if (!byId[id]) return;
-          var sig2 = stanceSign(byId[id]);
-          var log = itemLogs[id];
-          if (log.postLiked === true) S += STANCE_WEIGHTS.strong * sig2;
-          if (log.postReposted === true) S += STANCE_WEIGHTS.strong * sig2;
-          if (log.postReportedReason) S -= STANCE_WEIGHTS.strong * sig2;
-        });
-        // Phase 2: navigation clicks (unique target items)
-        var p2Clicked = new Set();
-        p2SidebarClicks.forEach(function (c) {
-          p2Clicked.add(c.tgt);
-        });
-        p2Clicked.forEach(function (id) {
-          if (byId[id]) S += STANCE_WEIGHTS.click * stanceSign(byId[id]);
-        });
-
-        return S;
+        return { alpha: 1 + priorA + evA, beta: 1 + priorB + evB };
       }
 
       function loadRecos() {
         var unviewed = allItemsCache.filter(function (i) {
           return i.id !== currentItem.id && !viewedItemIds.has(i.id);
         });
-        // Phase1 sidebar clicks (except the last) stay pinned at the top and
-        // count toward their stance's quota; the rest follows the
-        // stance-adaptive list (3 aligned + 1 counter by sign of S; 2+2 at S=0)
+        // Unviewed phase-1 clicks stay pinned on top; the rest is filled by
+        // the stance-adaptive list.
         var priority = p1PriorityClicks
           .map(function (id) {
             return unviewed.find(function (i) {
@@ -512,16 +557,25 @@
             });
           })
           .filter(Boolean);
-        var S = computeStance();
-        var reco = buildRecoList(S, currentItem.id, unviewed, priority);
+        var belief = computeStance();
+        var reco = buildRecoList(
+          belief.alpha,
+          belief.beta,
+          currentItem.id,
+          unviewed,
+          priority,
+        );
         recoItems = reco.items;
         // "For You" goes on the most recently clicked pinned post when one is
         // still unviewed; once none remain, it falls back to the algorithmic
-        // top-similarity aligned-to-S pick from buildRecoList.
+        // top-similarity aligned pick from buildRecoList.
         recoTopPickId = priority.length ? priority[0].id : reco.meta.topPickId;
         p2StanceTrace.push({
           item: currentItem.id,
-          S: S,
+          alpha: belief.alpha,
+          beta: belief.beta,
+          mean: reco.meta.mean,
+          sd: reco.meta.sd,
           mode: reco.meta.mode,
         });
         p2RecoLists.push(reco.meta);
@@ -638,6 +692,12 @@
             "</div>";
           card.addEventListener("click", function () {
             p2SidebarClicks.push({ src: currentItem.id, tgt: item.id });
+            setStanceEvent(
+              "click:" + item.id,
+              true,
+              stanceSign(item),
+              STANCE_WEIGHTS.click,
+            );
             navigateTo(item.id);
           });
           list.appendChild(card);
