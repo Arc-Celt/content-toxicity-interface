@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Social Feed Study</title>
     <link rel="stylesheet" href="styles.css" />
+    <!-- Microsoft Clarity: attention/heatmap tracking. -->
+    <script type="text/javascript">
+      (function (c, l, a, r, i, t, y) {
+        c[a] =
+          c[a] ||
+          function () {
+            (c[a].q = c[a].q || []).push(arguments);
+          };
+        t = l.createElement(r);
+        t.async = 1;
+        t.src = "https://www.clarity.ms/tag/" + i;
+        y = l.getElementsByTagName(r)[0];
+        y.parentNode.insertBefore(t, y);
+      })(window, document, "clarity", "script", "y07zvlnggc");
+    </script>
   </head>
   <body>
     <div id="loading">Loading&hellip;</div>
@@ -414,7 +429,9 @@
             "</div>" +
             '<div class="reco-body">' +
             (condition === "video" && item.thumbnail_url
-              ? '<img class="reco-thumb" src="' + esc(item.thumbnail_url) + '" alt="" />'
+              ? '<img class="reco-thumb" src="' +
+                esc(item.thumbnail_url) +
+                '" alt="" />'
               : "") +
             '<div class="reco-preview">' +
             esc(recoPreview(item)) +
