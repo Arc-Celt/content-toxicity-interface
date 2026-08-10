@@ -25,20 +25,51 @@
             <div id="stim-media"></div>
             <div class="action-bar">
               <button class="action-btn" id="btn-like">
-                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
-                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"
+                  />
                   <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
                 </svg>
                 <span id="like-label">Like</span>
               </button>
               <button class="action-btn" id="btn-reply">
-                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  />
                 </svg>
                 Reply
               </button>
               <button class="action-btn" id="btn-repost">
-                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
                   <path d="M17 1l4 4-4 4" />
                   <path d="M3 11V9a4 4 0 0 1 4-4h14" />
                   <path d="M7 23l-4-4 4-4" />
@@ -47,23 +78,45 @@
                 <span id="repost-label">Repost</span>
               </button>
               <button class="action-btn" id="btn-report">
-                <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18">
-                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+                  />
                   <line x1="4" x2="4" y1="22" y2="15" />
                 </svg>
                 <span id="report-label">Report</span>
               </button>
             </div>
             <div class="reply-box">
-              <div class="avatar" style="width: 34px; height: 34px; font-size: 13px">Y</div>
-              <textarea id="post-reply-input" placeholder="Post your reply" rows="1"></textarea>
+              <div
+                class="avatar"
+                style="width: 34px; height: 34px; font-size: 13px"
+              >
+                Y
+              </div>
+              <textarea
+                id="post-reply-input"
+                placeholder="Post your reply"
+                rows="1"
+              ></textarea>
               <button class="send-btn" id="post-reply-send">Reply</button>
             </div>
           </div>
           <div class="comment-section">
             <div class="comment-section-title">Comments</div>
             <div id="comment-list"></div>
-            <button class="view-more-btn" id="view-more-btn">View more comments</button>
+            <button class="view-more-btn" id="view-more-btn">
+              View more comments
+            </button>
           </div>
         </div>
 
@@ -103,7 +156,7 @@
       var viewedItemIds = new Set();
       // navigationHistory: [{id, viewedAt, leftAt}]
       var navigationHistory = [];
-      var p2SidebarClicks  = []; // [{src, tgt}, …] in order
+      var p2SidebarClicks = []; // [{src, tgt}, …] in order
       var p1PriorityClicks = []; // phase1 sidebar clicks except last, in order
 
       // ---- STANCE STATE (phase-1 context + trace) ----
@@ -122,15 +175,15 @@
       function getItemLog(itemId) {
         if (!itemLogs[itemId]) {
           itemLogs[itemId] = {
-            postLiked:           null,
-            postReposted:        null,
-            postReportedReason:  "",
-            postReplies:         [],
-            commentReplies:      [],
-            commentLikes:        {},
-            commentReposts:      {},
-            commentReports:      [],
-            commentExpansions:   0,
+            postLiked: null,
+            postReposted: null,
+            postReportedReason: "",
+            postReplies: [],
+            commentReplies: [],
+            commentLikes: {},
+            commentReposts: {},
+            commentReports: [],
+            commentExpansions: 0,
           };
         }
         return itemLogs[itemId];
@@ -138,54 +191,88 @@
 
       function buildPayload() {
         var now = new Date().toISOString();
-        var p2Nav = navigationHistory.map(function(n, idx) {
-          var left = n.leftAt || (idx === navigationHistory.length - 1 ? now : null);
-          var secs = left ? Math.round((new Date(left) - new Date(n.viewedAt)) / 1000) : 0;
+        var p2Nav = navigationHistory.map(function (n, idx) {
+          var left =
+            n.leftAt || (idx === navigationHistory.length - 1 ? now : null);
+          var secs = left
+            ? Math.round((new Date(left) - new Date(n.viewedAt)) / 1000)
+            : 0;
           return { id: n.id, secs: secs };
         });
 
-        var p2PostLikes = {}, p2PostReposts = {}, p2PostReports = [], p2PostReplies = [];
-        var p2CmtExp = {}, p2CmtLikes = {}, p2CmtReposts = {};
-        var p2CmtReports = [], p2CmtReplies = [];
+        var p2PostLikes = {},
+          p2PostReposts = {},
+          p2PostReports = [],
+          p2PostReplies = [];
+        var p2CmtExp = {},
+          p2CmtLikes = {},
+          p2CmtReposts = {};
+        var p2CmtReports = [],
+          p2CmtReplies = [];
 
         Object.keys(itemLogs).forEach(function (id) {
           var log = itemLogs[id];
-          if (log.postLiked    !== null) p2PostLikes[id]   = log.postLiked    ? 1 : 0;
-          if (log.postReposted !== null) p2PostReposts[id] = log.postReposted ? 1 : 0;
-          if (log.postReportedReason)   p2PostReports.push({ id: id, reason: log.postReportedReason });
-          var replies = log.postReplies.filter(function (r) { return !r.deleted; });
-          if (replies.length) p2PostReplies.push({ id: id, texts: replies.map(function (r) { return r.text; }) });
-          if (log.commentExpansions > 0) p2CmtExp[id] = log.commentExpansions;
-          var likedCids = Object.keys(log.commentLikes).filter(function (k) { return log.commentLikes[k]; });
-          if (likedCids.length) p2CmtLikes[id] = likedCids;
-          var repostedCids = Object.keys(log.commentReposts).filter(function (k) { return log.commentReposts[k]; });
-          if (repostedCids.length) p2CmtReposts[id] = repostedCids;
-          log.commentReports.forEach(function (r) { p2CmtReports.push({ id: id, cid: r.cid, reason: r.reason }); });
-          log.commentReplies.filter(function (r) { return !r.deleted; }).forEach(function (r) {
-            p2CmtReplies.push({ id: id, cid: r.cid, text: r.text });
+          if (log.postLiked !== null) p2PostLikes[id] = log.postLiked ? 1 : 0;
+          if (log.postReposted !== null)
+            p2PostReposts[id] = log.postReposted ? 1 : 0;
+          if (log.postReportedReason)
+            p2PostReports.push({ id: id, reason: log.postReportedReason });
+          var replies = log.postReplies.filter(function (r) {
+            return !r.deleted;
           });
+          if (replies.length)
+            p2PostReplies.push({
+              id: id,
+              texts: replies.map(function (r) {
+                return r.text;
+              }),
+            });
+          if (log.commentExpansions > 0) p2CmtExp[id] = log.commentExpansions;
+          var likedCids = Object.keys(log.commentLikes).filter(function (k) {
+            return log.commentLikes[k];
+          });
+          if (likedCids.length) p2CmtLikes[id] = likedCids;
+          var repostedCids = Object.keys(log.commentReposts).filter(
+            function (k) {
+              return log.commentReposts[k];
+            },
+          );
+          if (repostedCids.length) p2CmtReposts[id] = repostedCids;
+          log.commentReports.forEach(function (r) {
+            p2CmtReports.push({ id: id, cid: r.cid, reason: r.reason });
+          });
+          log.commentReplies
+            .filter(function (r) {
+              return !r.deleted;
+            })
+            .forEach(function (r) {
+              p2CmtReplies.push({ id: id, cid: r.cid, text: r.text });
+            });
         });
 
         return {
-          p2_nav:                JSON.stringify(p2Nav),
-          p2_post_likes:         JSON.stringify(p2PostLikes),
-          p2_post_reposts:       JSON.stringify(p2PostReposts),
-          p2_post_reports:       JSON.stringify(p2PostReports),
-          p2_post_replies:       JSON.stringify(p2PostReplies),
+          p2_nav: JSON.stringify(p2Nav),
+          p2_post_likes: JSON.stringify(p2PostLikes),
+          p2_post_reposts: JSON.stringify(p2PostReposts),
+          p2_post_reports: JSON.stringify(p2PostReports),
+          p2_post_replies: JSON.stringify(p2PostReplies),
           p2_comment_expansions: JSON.stringify(p2CmtExp),
-          p2_comment_likes:      JSON.stringify(p2CmtLikes),
-          p2_comment_reposts:    JSON.stringify(p2CmtReposts),
-          p2_comment_reports:    JSON.stringify(p2CmtReports),
-          p2_comment_replies:    JSON.stringify(p2CmtReplies),
-          p2_sidebar_clicks:     JSON.stringify(p2SidebarClicks),
-          p2_stance_trace:       JSON.stringify(p2StanceTrace),
-          p2_reco_lists:         JSON.stringify(p2RecoLists),
+          p2_comment_likes: JSON.stringify(p2CmtLikes),
+          p2_comment_reposts: JSON.stringify(p2CmtReposts),
+          p2_comment_reports: JSON.stringify(p2CmtReports),
+          p2_comment_replies: JSON.stringify(p2CmtReplies),
+          p2_sidebar_clicks: JSON.stringify(p2SidebarClicks),
+          p2_stance_trace: JSON.stringify(p2StanceTrace),
+          p2_reco_lists: JSON.stringify(p2RecoLists),
         };
       }
 
       function sendState() {
         if (!currentItem) return;
-        window.parent.postMessage({ type: "phase2_update", data: buildPayload() }, "*");
+        window.parent.postMessage(
+          { type: "phase2_update", data: buildPayload() },
+          "*",
+        );
       }
 
       function trackInteraction(type, data) {
@@ -203,12 +290,18 @@
             log.postReportedReason = data.reason;
             break;
           case "post_replies":
-            log.postReplies.push({ idx: data.reply_index, text: data.body, deleted: false });
+            log.postReplies.push({
+              idx: data.reply_index,
+              text: data.body,
+              deleted: false,
+            });
             break;
           case "post_reply_interactions":
-            var pr = log.postReplies.find(function (r) { return r.idx === data.reply_index; });
+            var pr = log.postReplies.find(function (r) {
+              return r.idx === data.reply_index;
+            });
             if (pr) {
-              if (data.action_type === "edit")   pr.text    = data.value;
+              if (data.action_type === "edit") pr.text = data.value;
               if (data.action_type === "delete") pr.deleted = true;
             }
             break;
@@ -222,17 +315,25 @@
             log.commentReposts[data.comment_id] = data.reposted;
             break;
           case "comment_reports":
-            log.commentReports.push({ cid: data.comment_id, reason: data.reason });
+            log.commentReports.push({
+              cid: data.comment_id,
+              reason: data.reason,
+            });
             break;
           case "comment_replies":
-            log.commentReplies.push({ cid: data.comment_id, idx: data.reply_index, text: data.body, deleted: false });
+            log.commentReplies.push({
+              cid: data.comment_id,
+              idx: data.reply_index,
+              text: data.body,
+              deleted: false,
+            });
             break;
           case "comment_reply_interactions":
             var cr = log.commentReplies.find(function (r) {
               return r.cid === data.comment_id && r.idx === data.reply_index;
             });
             if (cr) {
-              if (data.action_type === "edit")   cr.text    = data.value;
+              if (data.action_type === "edit") cr.text = data.value;
               if (data.action_type === "delete") cr.deleted = true;
             }
             break;
@@ -247,7 +348,9 @@
           .eq("group_code", GROUP)
           .single();
         if (grpRes.error || !grpRes.data) {
-          showError("Could not load study configuration. Please contact the researcher.");
+          showError(
+            "Could not load study configuration. Please contact the researcher.",
+          );
           return;
         }
         condition = grpRes.data.format;
@@ -257,7 +360,9 @@
         if (!allItemsCache) {
           var itemsRes = await db.from("items").select("*");
           if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
-            showError("Could not load study content. Please contact the researcher.");
+            showError(
+              "Could not load study content. Please contact the researcher.",
+            );
             return;
           }
           allItemsCache = itemsRes.data;
@@ -276,20 +381,29 @@
         }
 
         // Phase1 context from URL params
-        p1ItemId        = params.get("p1_item_id")     || "";
-        var p1LastClick = params.get("p1_last_click")  || "";
-        p1PostLiked     = params.get("p1_post_liked") === "1";
-        p1PostReposted  = params.get("p1_post_reposted") === "1";
-        p1PostReported  = !!(params.get("p1_post_reported") || "");
+        p1ItemId = params.get("p1_item_id") || "";
+        var p1LastClick = params.get("p1_last_click") || "";
+        p1PostLiked = params.get("p1_post_liked") === "1";
+        p1PostReposted = params.get("p1_post_reposted") === "1";
+        p1PostReported = !!(params.get("p1_post_reported") || "");
 
-        // Parse all phase1 sidebar clicks to build priority list
+        // Parse all phase1 sidebar clicks to build priority list.
         var p1ClicksRaw = params.get("p1_sidebar_clicks_raw") || "";
-        p1AllClicks = p1ClicksRaw ? p1ClicksRaw.split(",").filter(Boolean) : [];
+        p1AllClicks = p1ClicksRaw
+          ? p1ClicksRaw
+              .split(",")
+              .filter(Boolean)
+              .filter(function (id) {
+                return id !== p1LastClick;
+              })
+          : [];
         // Priority = all clicks except the last (last becomes the main post).
         // The most recently clicked of these (2nd-to-last click overall)
         // leads the pinned block and gets the "For You" tag; the rest keep
         // their original click order behind it.
-        p1PriorityClicks = p1AllClicks.filter(function (id) { return id !== p1LastClick; });
+        p1PriorityClicks = p1AllClicks.filter(function (id) {
+          return id !== p1LastClick;
+        });
         if (p1PriorityClicks.length > 1) {
           p1PriorityClicks.unshift(p1PriorityClicks.pop());
         }
@@ -298,11 +412,19 @@
 
         var pool = shuffle(allItemsCache.slice());
         if (p1LastClick) {
-          currentItem = allItemsCache.find(function (i) { return i.id === p1LastClick; })
-            || pool.find(function (i) { return !viewedItemIds.has(i.id); })
-            || pool[0];
+          currentItem =
+            allItemsCache.find(function (i) {
+              return i.id === p1LastClick;
+            }) ||
+            pool.find(function (i) {
+              return !viewedItemIds.has(i.id);
+            }) ||
+            pool[0];
         } else {
-          currentItem = pool.find(function (i) { return !viewedItemIds.has(i.id); }) || pool[0];
+          currentItem =
+            pool.find(function (i) {
+              return !viewedItemIds.has(i.id);
+            }) || pool[0];
         }
 
         var cmtRes = await db
@@ -312,7 +434,11 @@
           .order("display_order");
         allComments = cmtRes.data || [];
         allComments.forEach(function (c) {
-          commentStates[c.id] = { liked: false, reposted: false, replyCount: 0 };
+          commentStates[c.id] = {
+            liked: false,
+            reposted: false,
+            replyCount: 0,
+          };
         });
 
         loadRecos();
@@ -334,13 +460,15 @@
       function computeStance() {
         var S = PRE_PARTY;
         var byId = {};
-        allItemsCache.forEach(function (i) { byId[i.id] = i; });
+        allItemsCache.forEach(function (i) {
+          byId[i.id] = i;
+        });
 
         // Phase 1: reactions to the main post (reports count opposite)
         var p1Item = byId[p1ItemId];
         if (p1Item) {
           var sig1 = stanceSign(p1Item);
-          if (p1PostLiked)    S += STANCE_WEIGHTS.strong * sig1;
+          if (p1PostLiked) S += STANCE_WEIGHTS.strong * sig1;
           if (p1PostReposted) S += STANCE_WEIGHTS.strong * sig1;
           if (p1PostReported) S -= STANCE_WEIGHTS.strong * sig1;
         }
@@ -354,13 +482,15 @@
           if (!byId[id]) return;
           var sig2 = stanceSign(byId[id]);
           var log = itemLogs[id];
-          if (log.postLiked === true)    S += STANCE_WEIGHTS.strong * sig2;
+          if (log.postLiked === true) S += STANCE_WEIGHTS.strong * sig2;
           if (log.postReposted === true) S += STANCE_WEIGHTS.strong * sig2;
-          if (log.postReportedReason)    S -= STANCE_WEIGHTS.strong * sig2;
+          if (log.postReportedReason) S -= STANCE_WEIGHTS.strong * sig2;
         });
         // Phase 2: navigation clicks (unique target items)
         var p2Clicked = new Set();
-        p2SidebarClicks.forEach(function (c) { p2Clicked.add(c.tgt); });
+        p2SidebarClicks.forEach(function (c) {
+          p2Clicked.add(c.tgt);
+        });
         p2Clicked.forEach(function (id) {
           if (byId[id]) S += STANCE_WEIGHTS.click * stanceSign(byId[id]);
         });
@@ -376,7 +506,11 @@
         // count toward their stance's quota; the rest follows the
         // stance-adaptive list (3 aligned + 1 counter by sign of S; 2+2 at S=0)
         var priority = p1PriorityClicks
-          .map(function (id) { return unviewed.find(function (i) { return i.id === id; }); })
+          .map(function (id) {
+            return unviewed.find(function (i) {
+              return i.id === id;
+            });
+          })
           .filter(Boolean);
         var S = computeStance();
         var reco = buildRecoList(S, currentItem.id, unviewed, priority);
@@ -385,7 +519,11 @@
         // still unviewed; once none remain, it falls back to the algorithmic
         // top-similarity aligned-to-S pick from buildRecoList.
         recoTopPickId = priority.length ? priority[0].id : reco.meta.topPickId;
-        p2StanceTrace.push({ item: currentItem.id, S: S, mode: reco.meta.mode });
+        p2StanceTrace.push({
+          item: currentItem.id,
+          S: S,
+          mode: reco.meta.mode,
+        });
         p2RecoLists.push(reco.meta);
       }
 
@@ -395,7 +533,11 @@
 
         document.getElementById("feed-root").style.opacity = "0.4";
 
-        var itemRes = await db.from("items").select("*").eq("id", itemId).single();
+        var itemRes = await db
+          .from("items")
+          .select("*")
+          .eq("id", itemId)
+          .single();
         if (itemRes.error || !itemRes.data) {
           document.getElementById("feed-root").style.opacity = "1";
           return;
@@ -415,7 +557,11 @@
 
         commentStates = {};
         allComments.forEach(function (c) {
-          commentStates[c.id] = { liked: false, reposted: false, replyCount: 0 };
+          commentStates[c.id] = {
+            liked: false,
+            reposted: false,
+            replyCount: 0,
+          };
         });
         renderedCmtIds = new Set();
         visibleCount = INITIAL_COMMENTS;
@@ -443,13 +589,16 @@
         ta.style.minHeight = "38px";
         send.style.display = "none";
         document.getElementById("btn-like").style.color = "#536471";
-        document.getElementById("btn-like").querySelector("svg").outerHTML = SVG_LIKE;
+        document.getElementById("btn-like").querySelector("svg").outerHTML =
+          SVG_LIKE;
         document.getElementById("like-label").textContent = "Like";
         document.getElementById("btn-repost").style.color = "#536471";
-        document.getElementById("btn-repost").querySelector("svg").outerHTML = SVG_REPOST;
+        document.getElementById("btn-repost").querySelector("svg").outerHTML =
+          SVG_REPOST;
         document.getElementById("repost-label").textContent = "Repost";
         document.getElementById("btn-report").style.color = "#536471";
-        document.getElementById("btn-report").querySelector("svg").outerHTML = SVG_REPORT;
+        document.getElementById("btn-report").querySelector("svg").outerHTML =
+          SVG_REPORT;
         document.getElementById("report-label").textContent = "Report";
       }
 
@@ -467,15 +616,25 @@
           var recoUser = (item.author || "?").replace(/^@/, "");
           card.innerHTML =
             '<div class="reco-card-header">' +
-            (item.id === recoTopPickId ? '<span class="reco-foryou-tag">For You</span>' : "") +
-            '<div class="reco-avatar">' + esc(recoUser[0].toUpperCase()) + "</div>" +
-            '<span class="reco-author">@' + esc(recoUser) + "</span>" +
+            (item.id === recoTopPickId
+              ? '<span class="reco-foryou-tag">For You</span>'
+              : "") +
+            '<div class="reco-avatar">' +
+            esc(recoUser[0].toUpperCase()) +
+            "</div>" +
+            '<span class="reco-author">@' +
+            esc(recoUser) +
+            "</span>" +
             "</div>" +
             '<div class="reco-body">' +
             (condition === "video" && item.thumbnail_url
-              ? '<img class="reco-thumb" src="' + esc(item.thumbnail_url) + '" alt="" />'
+              ? '<img class="reco-thumb" src="' +
+                esc(item.thumbnail_url) +
+                '" alt="" />'
               : "") +
-            '<div class="reco-preview">' + esc(recoPreview(item)) + "</div>" +
+            '<div class="reco-preview">' +
+            esc(recoPreview(item)) +
+            "</div>" +
             "</div>";
           card.addEventListener("click", function () {
             p2SidebarClicks.push({ src: currentItem.id, tgt: item.id });
@@ -488,8 +647,12 @@
       function handleContinue() {
         if (continueFired) return;
         continueFired = true;
-        navigationHistory[navigationHistory.length - 1].leftAt = new Date().toISOString();
-        window.parent.postMessage({ type: "phase2_complete", data: buildPayload() }, "*");
+        navigationHistory[navigationHistory.length - 1].leftAt =
+          new Date().toISOString();
+        window.parent.postMessage(
+          { type: "phase2_complete", data: buildPayload() },
+          "*",
+        );
       }
 
       init();

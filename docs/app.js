@@ -1034,7 +1034,10 @@ function topByStance(anchorId, pool, sign, n) {
 // pinned items (phase-1 clicks, unviewed) always lead and consume their
 // stance's quota. Exhausted buckets backfill from whatever remains. The
 // counter item lands at a random slot within the non-pinned tail; its final
-// index is reported as meta.counterPos (-1 when none / balanced mode).
+// index is reported as meta.counterPos (-1 when none / balanced mode). The
+// guaranteed top pick (meta.topPickId, tagged "For You" by the caller) is
+// the single most-similar aligned-to-S item when S != 0, or the single
+// most-similar item overall at exact neutrality (S === 0).
 function buildRecoList(S, anchorId, pool, pinned) {
   var total = RECO_COUNT;
   var alignSign = S >= 0 ? 1 : -1;
@@ -1058,19 +1061,66 @@ function buildRecoList(S, anchorId, pool, pinned) {
     return !pinnedIds.has(i.id);
   });
 
-  var alignedFill = topByStance(anchorId, rest, alignSign, quota[alignSign]);
-  var counterFill = topByStance(anchorId, rest, -alignSign, quota[-alignSign]);
-
-  // backfill if a stance bucket ran short
-  var short = total - recoList.length - alignedFill.length - counterFill.length;
-  if (short > 0) {
-    var used = new Set(
-      recoList.concat(alignedFill, counterFill).map(function (i) {
+  // The guaranteed top pick ("For You" tag target):
+  //  - S != 0: single most-similar item within the aligned-to-S bucket.
+  //  - S == 0: no stance to align to, so pick the single most-similar item
+  //    overall (either stance).
+  var restById = {};
+  rest.forEach(function (i) {
+    restById[i.id] = i;
+  });
+  var topPickEligible =
+    S !== 0
+      ? rest.filter(function (i) {
+          return stanceSign(i) === alignSign;
+        })
+      : rest;
+  var topPickId = rankedSimilar(
+    allSimilarities,
+    anchorId,
+    new Set(
+      topPickEligible.map(function (i) {
         return i.id;
       }),
+    ),
+  )[0];
+  var topPick = topPickId ? restById[topPickId] : null;
+  if (topPick) quota[stanceSign(topPick)]--;
+
+  var restMinusTop = rest.filter(function (i) {
+    return !topPick || i.id !== topPick.id;
+  });
+
+  var alignedFill = topByStance(
+    anchorId,
+    restMinusTop,
+    alignSign,
+    quota[alignSign],
+  );
+  var counterFill = topByStance(
+    anchorId,
+    restMinusTop,
+    -alignSign,
+    quota[-alignSign],
+  );
+
+  // backfill if a stance bucket ran short
+  var short =
+    total -
+    recoList.length -
+    (topPick ? 1 : 0) -
+    alignedFill.length -
+    counterFill.length;
+  if (short > 0) {
+    var used = new Set(
+      recoList
+        .concat(topPick ? [topPick] : [], alignedFill, counterFill)
+        .map(function (i) {
+          return i.id;
+        }),
     );
     var spareById = {};
-    rest.forEach(function (i) {
+    restMinusTop.forEach(function (i) {
       if (!used.has(i.id)) spareById[i.id] = i;
     });
     alignedFill = alignedFill.concat(
@@ -1082,21 +1132,17 @@ function buildRecoList(S, anchorId, pool, pinned) {
     );
   }
 
-  // The most similar aligned-to-S item on top
-  var topPick = alignedFill.length ? alignedFill[0] : null;
-  var alignedRest = topPick ? alignedFill.slice(1) : alignedFill;
-
   var tail;
   var counterPos = -1;
   if (S !== 0 && counterFill.length) {
-    tail = alignedRest.slice();
+    tail = alignedFill.slice();
     var at = Math.floor(Math.random() * (tail.length + 1));
     tail.splice(at, 0, counterFill[0]);
     counterPos = recoList.length + (topPick ? 1 : 0) + at;
     tail = tail.concat(counterFill.slice(1));
   } else {
     // balanced mode: shuffle so stance order carries no signal
-    tail = shuffle(alignedRest.concat(counterFill));
+    tail = shuffle(alignedFill.concat(counterFill));
   }
   if (topPick) tail.unshift(topPick);
 
