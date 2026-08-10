@@ -72,6 +72,7 @@ def main():
             it.get('author', ''),
             it.get('stance', ''),
             it.get('video_url', ''),
+            it.get('thumbnail_url', ''),
             it.get('transcript', ''),
             bool(it.get('is_main_stimulus', False)),
         )
@@ -105,13 +106,14 @@ def main():
                 cur,
                 """
                 insert into items
-                    (id, title, author, stance, video_url, transcript, is_main_stimulus)
+                    (id, title, author, stance, video_url, thumbnail_url, transcript, is_main_stimulus)
                 values %s
                 on conflict (id) do update set
                     title            = excluded.title,
                     author           = excluded.author,
                     stance           = excluded.stance,
                     video_url        = excluded.video_url,
+                    thumbnail_url    = excluded.thumbnail_url,
                     transcript       = excluded.transcript,
                     is_main_stimulus = excluded.is_main_stimulus
                 """,

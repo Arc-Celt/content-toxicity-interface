@@ -37,7 +37,7 @@ var GROUP = params.get("group") || "A1";
 
 // ---- CONTENT CACHE ----
 // items/item_similarities
-var CONTENT_VERSION = "1";
+var CONTENT_VERSION = "2";
 
 function loadCached(key) {
   try {
