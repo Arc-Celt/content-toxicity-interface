@@ -466,12 +466,17 @@
           card.className = "reco-card";
           var recoUser = (item.author || "?").replace(/^@/, "");
           card.innerHTML =
-            (item.id === recoTopPickId ? '<span class="reco-foryou-tag">For You</span>' : "") +
             '<div class="reco-card-header">' +
+            (item.id === recoTopPickId ? '<span class="reco-foryou-tag">For You</span>' : "") +
             '<div class="reco-avatar">' + esc(recoUser[0].toUpperCase()) + "</div>" +
             '<span class="reco-author">@' + esc(recoUser) + "</span>" +
             "</div>" +
-            '<div class="reco-preview">' + esc(recoPreview(item)) + "</div>";
+            '<div class="reco-body">' +
+            (condition === "video" && item.thumbnail_url
+              ? '<img class="reco-thumb" src="' + esc(item.thumbnail_url) + '" alt="" />'
+              : "") +
+            '<div class="reco-preview">' + esc(recoPreview(item)) + "</div>" +
+            "</div>";
           card.addEventListener("click", function () {
             p2SidebarClicks.push({ src: currentItem.id, tgt: item.id });
             navigateTo(item.id);

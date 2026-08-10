@@ -225,8 +225,9 @@ body {
 }
 .reco-foryou-tag {
   position: absolute;
-  top: 8px;
-  right: 10px;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -237,13 +238,14 @@ body {
   border-radius: 999px;
 }
 .reco-card-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
 }
 /* reserve space so the tag never overlaps a long username */
-.reco-card:has(.reco-foryou-tag) .reco-card-header {
+.reco-card-header:has(.reco-foryou-tag) {
   padding-right: 58px;
 }
 .reco-avatar {
@@ -267,6 +269,21 @@ body {
   font-size: 13px;
   color: #536471;
   line-height: 1.4;
+}
+.reco-body {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.reco-thumb {
+  width: 84px;
+  height: 128px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: #eff3f4;
+  display: block;
+  margin-left: 4px;
 }
 
 /* Modals */

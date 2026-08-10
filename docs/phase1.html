@@ -412,8 +412,13 @@
             esc(recoUser) +
             "</span>" +
             "</div>" +
+            '<div class="reco-body">' +
+            (condition === "video" && item.thumbnail_url
+              ? '<img class="reco-thumb" src="' + esc(item.thumbnail_url) + '" alt="" />'
+              : "") +
             '<div class="reco-preview">' +
             esc(recoPreview(item)) +
+            "</div>" +
             "</div>";
           card.addEventListener("click", function () {
             handleRecoClick(item.id);
