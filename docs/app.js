@@ -61,23 +61,21 @@ function saveCached(key, data) {
 }
 
 // ---- STANCE RECOMMENDER CONFIG ----
-// Stance belief is Beta(alpha, beta), X = chance of leaning pro. The party
-// item sets the starting counts; behaviors add integer evidence points.
-// S = E(X) = alpha/(alpha+beta) decides the list.
-var STANCE_WEIGHTS = { strong: 2, click: 1 }; // like/repost/report vs clicks
-var STANCE_DECAY = 0.8; // per-action decay on prior signals
-var NEUTRAL_BAND = 0.05; // |S - 0.5| under 0.05 -> balanced 2+2 list
-var RECO_ALIGNED = 3; // aligned posts per 3+1 list
+// theta ~ Beta(alpha, beta) with alpha = anti evidence, beta = pro evidence.
+// Each sidebar slot draws its own theta and shows a pro post if theta < 0.5.
+// Only the last STANCE_WINDOW actions count.
+var STANCE_WEIGHTS = { strong: 0.25, click: 0.125 }; // like/repost/report vs clicks
+var STANCE_PRIOR_WEIGHTS = { strong: 0.5, click: 0.25 };
+var STANCE_WINDOW = 4; // actions retained
 var PRE_PARTY = parseFloat(params.get("pre_party")) || 0; // ±2/±1/0
 
-// Starting parameters. Gaps of 6/3/0 so a stated party lean survives two
-// opposing actions, a leaner survives one, and independents start balanced.
-function partyToPrior(preParty) {
-  if (preParty === 2) return { alpha: 9, beta: 3 }; // Democrat
-  if (preParty === 1) return { alpha: 6, beta: 3 }; // closer to Dem
-  if (preParty === -1) return { alpha: 3, beta: 6 }; // closer to Rep
-  if (preParty === -2) return { alpha: 3, beta: 9 }; // Republican
-  return { alpha: 3, beta: 3 }; // independent / neither
+function partyPseudoEvent(preParty) {
+  var w = STANCE_PRIOR_WEIGHTS;
+  if (preParty === 2) return { sign: 1, points: w.strong }; // Dem
+  if (preParty === 1) return { sign: 1, points: w.click }; // ~Dem
+  if (preParty === -1) return { sign: -1, points: w.click }; // ~Rep
+  if (preParty === -2) return { sign: -1, points: w.strong }; // Rep
+  return null; // independent / neither
 }
 
 function betaMean(alpha, beta) {
@@ -91,6 +89,38 @@ function betaSD(alpha, beta) {
 
 function round4(x) {
   return Math.round(x * 10000) / 10000;
+}
+
+// ---- RANDOM DRAWS ----
+function randNormal() {
+  var u = 0;
+  var v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function randGamma(shape) {
+  var d = shape - 1 / 3;
+  var c = 1 / Math.sqrt(9 * d);
+  for (;;) {
+    var x;
+    var v;
+    do {
+      x = randNormal();
+      v = 1 + c * x;
+    } while (v <= 0);
+    v = v * v * v;
+    var u = Math.random();
+    if (u < 1 - 0.0331 * x * x * x * x) return d * v;
+    if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+  }
+}
+
+function randBeta(alpha, beta) {
+  var x = randGamma(alpha);
+  var y = randGamma(beta);
+  return x / (x + y);
 }
 
 // ---- SHARED STATE ----
@@ -1055,127 +1085,65 @@ function topByStance(anchorId, pool, sign, n) {
     });
 }
 
-// Builds the sidebar list from Beta(alpha, beta): S > 0.5 -> 3 pro + 1 anti, vice versa, S within NEUTRAL_BAND of 0.5 -> 2+2 balanced.
-// Pinned phase-1 clicks lead and consume their stance quota; short buckets backfill.
-// meta.topPickId is the "For You" target; the counter item takes a random
-// slot in the tail (meta.counterPos, -1 if none).
+// Builds the sidebar list. Each slot draws its own theta ~ Beta dist and
+// takes a pro post when theta < 0.5, filling from the most similar unused
+// post of that stance. The drawn portion is then reordered so an aligned post
+// leads (aligned = the side with more evidence), leaving the composition
+// itself untouched. Pinned phase-1 clicks lead and consume slots.
 function buildRecoList(alpha, beta, anchorId, pool, pinned) {
   var total = RECO_COUNT;
-  var S = betaMean(alpha, beta);
-  var balanced = Math.abs(S - 0.5) < NEUTRAL_BAND; // too close to call
-  var alignSign = S >= 0.5 ? 1 : -1;
-  var quota = {};
-  quota[alignSign] = balanced ? total / 2 : RECO_ALIGNED;
-  quota[-alignSign] = total - quota[alignSign];
-
-  var recoList = (pinned || []).slice(0, total);
-  recoList.forEach(function (it) {
-    var s = stanceSign(it);
-    if (quota[s] > 0) quota[s]--;
-    else if (quota[-s] > 0) quota[-s]--; // over-quota pins eat the other bucket
-  });
-
-  var pinnedIds = new Set(
-    recoList.map(function (i) {
+  var items = (pinned || []).slice(0, total);
+  var drawnStart = items.length;
+  var used = new Set(
+    items.map(function (i) {
       return i.id;
     }),
   );
-  var rest = pool.filter(function (i) {
-    return !pinnedIds.has(i.id);
+
+  var byId = {};
+  pool.forEach(function (i) {
+    byId[i.id] = i;
   });
 
-  // Top pick: most similar within the aligned bucket, or most similar overall at a tie
-  var restById = {};
-  rest.forEach(function (i) {
-    restById[i.id] = i;
-  });
-  var topPickEligible = balanced
-    ? rest
-    : rest.filter(function (i) {
-        return stanceSign(i) === alignSign;
-      });
-  var topPickId = rankedSimilar(
-    allSimilarities,
-    anchorId,
-    new Set(
-      topPickEligible.map(function (i) {
-        return i.id;
-      }),
-    ),
-  )[0];
-  var topPick = topPickId ? restById[topPickId] : null;
-  if (topPick) quota[stanceSign(topPick)]--;
-
-  var restMinusTop = rest.filter(function (i) {
-    return !topPick || i.id !== topPick.id;
-  });
-
-  var alignedFill = topByStance(
-    anchorId,
-    restMinusTop,
-    alignSign,
-    quota[alignSign],
-  );
-  var counterFill = topByStance(
-    anchorId,
-    restMinusTop,
-    -alignSign,
-    quota[-alignSign],
+  // candidates per stance, most similar to the current post first
+  var proQueue = [];
+  var antiQueue = [];
+  rankedSimilar(allSimilarities, anchorId, new Set(Object.keys(byId))).forEach(
+    function (id) {
+      if (used.has(id)) return;
+      (stanceSign(byId[id]) > 0 ? proQueue : antiQueue).push(byId[id]);
+    },
   );
 
-  // backfill if a stance bucket ran short
-  var short =
-    total -
-    recoList.length -
-    (topPick ? 1 : 0) -
-    alignedFill.length -
-    counterFill.length;
-  if (short > 0) {
-    var used = new Set(
-      recoList
-        .concat(topPick ? [topPick] : [], alignedFill, counterFill)
-        .map(function (i) {
-          return i.id;
-        }),
-    );
-    var spareById = {};
-    restMinusTop.forEach(function (i) {
-      if (!used.has(i.id)) spareById[i.id] = i;
-    });
-    alignedFill = alignedFill.concat(
-      rankedSimilar(allSimilarities, anchorId, new Set(Object.keys(spareById)))
-        .slice(0, short)
-        .map(function (id) {
-          return spareById[id];
-        }),
-    );
+  var draws = [];
+  while (items.length < total) {
+    var theta = randBeta(alpha, beta);
+    var wantPro = theta < 0.5;
+    draws.push({ theta: round4(theta), stance: wantPro ? "pro" : "anti" });
+    var pick = wantPro ? proQueue.shift() : antiQueue.shift();
+    if (!pick) pick = wantPro ? antiQueue.shift() : proQueue.shift();
+    if (!pick) break; // pool exhausted
+    items.push(pick);
   }
 
-  var tail;
-  var counterPos = -1;
-  if (!balanced && counterFill.length) {
-    tail = alignedFill.slice();
-    var at = Math.floor(Math.random() * (tail.length + 1));
-    tail.splice(at, 0, counterFill[0]);
-    counterPos = recoList.length + (topPick ? 1 : 0) + at;
-    tail = tail.concat(counterFill.slice(1));
-  } else {
-    // balanced mode: shuffle so stance order carries no signal
-    tail = shuffle(alignedFill.concat(counterFill));
+  // mean < 0.5 is the same test as alpha < beta, coin flip when tied
+  var alignedPro = alpha === beta ? Math.random() < 0.5 : alpha < beta;
+  for (var i = drawnStart; i < items.length; i++) {
+    if (stanceSign(items[i]) > 0 === alignedPro) {
+      items.splice(drawnStart, 0, items.splice(i, 1)[0]);
+      break;
+    }
   }
-  if (topPick) tail.unshift(topPick);
 
-  var items = recoList.concat(tail).slice(0, total);
   return {
     items: items,
     meta: {
-      alpha: alpha,
-      beta: beta,
-      S: round4(S),
+      alpha: round4(alpha),
+      beta: round4(beta),
+      mean: round4(betaMean(alpha, beta)),
       sd: round4(betaSD(alpha, beta)),
-      mode: balanced ? "2+2" : "3+1",
-      counterPos: counterPos,
-      topPickId: topPick ? topPick.id : null,
+      alignedStance: alignedPro ? "pro" : "anti",
+      draws: draws,
       items: items.map(function (i) {
         return { id: i.id, stance: i.stance };
       }),

@@ -541,22 +541,20 @@
       // A permanent Beta(1,1) floor keeps alpha and beta >= 1, so the posterior
       // stays well formed however long the session runs.
       function computeStance() {
-        var prior = partyToPrior(PRE_PARTY);
-        var priorA = prior.alpha - 1; // bonus above the (1,1) floor
-        var priorB = prior.beta - 1;
-        var evA = 0;
-        var evB = 0;
+        // party answer ages out of the window too
+        var events = [];
+        var pe = partyPseudoEvent(PRE_PARTY);
+        if (pe) events.push(pe);
+        events = events.concat(stanceEvents);
 
-        stanceEvents.forEach(function (e) {
-          priorA *= STANCE_DECAY;
-          priorB *= STANCE_DECAY;
-          evA *= STANCE_DECAY;
-          evB *= STANCE_DECAY;
-          if (e.sign > 0) evA += e.points;
-          else evB += e.points;
+        var alpha = 1; // anti evidence
+        var beta = 1; // pro evidence
+        events.slice(-STANCE_WINDOW).forEach(function (e) {
+          if (e.sign > 0) beta += e.points;
+          else alpha += e.points;
         });
 
-        return { alpha: 1 + priorA + evA, beta: 1 + priorB + evB };
+        return { alpha: alpha, beta: beta };
       }
 
       function loadRecos() {
@@ -581,17 +579,15 @@
           priority,
         );
         recoItems = reco.items;
-        // "For You" goes on the most recently clicked pinned post when one is
-        // still unviewed; once none remain, it falls back to the algorithmic
-        // top-similarity aligned pick from buildRecoList.
-        recoTopPickId = priority.length ? priority[0].id : reco.meta.topPickId;
+        // "For You" marks whatever leads the list
+        recoTopPickId = recoItems.length ? recoItems[0].id : null;
         p2StanceTrace.push({
           item: currentItem.id,
-          alpha: belief.alpha,
-          beta: belief.beta,
+          alpha: reco.meta.alpha,
+          beta: reco.meta.beta,
           mean: reco.meta.mean,
           sd: reco.meta.sd,
-          mode: reco.meta.mode,
+          draws: reco.meta.draws,
         });
         p2RecoLists.push(reco.meta);
       }
