@@ -366,13 +366,20 @@
         currentItem = shuffle(mainCandidates)[0];
 
         allSimilarities = loadCached("cache_similarities");
-        if (!allSimilarities) {
-          var simRes = await db
-            .from("item_similarities")
-            .select("item_id_a, item_id_b, cosine_similarity")
-            .order("item_id_a")
-            .order("cosine_similarity", { ascending: false });
-          allSimilarities = simRes.data || [];
+        if (!allSimilarities || !allSimilarities.length) {
+          try {
+            var simRes = await fetch("data/similarities.json");
+            if (!simRes.ok) throw new Error("HTTP " + simRes.status);
+            allSimilarities = await simRes.json();
+          } catch (e) {
+            allSimilarities = [];
+          }
+          if (!allSimilarities.length) {
+            showError(
+              "Could not load study content. Please contact the researcher.",
+            );
+            return;
+          }
           saveCached("cache_similarities", allSimilarities);
         }
 
