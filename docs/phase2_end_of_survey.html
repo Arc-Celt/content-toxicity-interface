@@ -444,12 +444,7 @@
         // Parse all phase1 sidebar clicks to build priority list.
         var p1ClicksRaw = params.get("p1_sidebar_clicks_raw") || "";
         p1AllClicks = p1ClicksRaw
-          ? p1ClicksRaw
-              .split(",")
-              .filter(Boolean)
-              .filter(function (id) {
-                return id !== p1LastClick;
-              })
+          ? p1ClicksRaw.split(",").filter(Boolean)
           : [];
         // Priority = all clicks except the last (last becomes the main post).
         // The most recently clicked of these (2nd-to-last click overall)
