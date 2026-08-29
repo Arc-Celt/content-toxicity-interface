@@ -482,6 +482,57 @@
           if (e.target.id === "reco-modal") closeRecoModal();
         });
 
+      // IFRAME AUTO-RESIZE
+      var lastSentHeight = 0;
+      var viewTop = 0;
+      var viewHeight = 0;
+
+      function contentHeight() {
+        var app = document.getElementById("app");
+        if (app && getComputedStyle(app).display !== "none") {
+          return Math.ceil(app.getBoundingClientRect().height) + 24;
+        }
+        return 600; // loading or error state
+      }
+
+      function postHeight() {
+        var h = contentHeight();
+        if (Math.abs(h - lastSentHeight) < 4) return; // damp resize feedback
+        lastSentHeight = h;
+        window.parent.postMessage({ type: "iframe_height", height: h }, "*");
+      }
+
+      function placeModals() {
+        if (!viewHeight) return;
+        var m = document.querySelectorAll(".modal-overlay");
+        for (var i = 0; i < m.length; i++) {
+          m[i].style.position = "absolute";
+          m[i].style.left = "0";
+          m[i].style.right = "0";
+          m[i].style.bottom = "auto";
+          m[i].style.top = viewTop + "px";
+          m[i].style.height = viewHeight + "px";
+        }
+      }
+
+      window.addEventListener("message", function (e) {
+        var d = e.data;
+        if (d && d.type === "qualtrics_viewport") {
+          viewTop = d.top || 0;
+          viewHeight = d.height || 0;
+          placeModals();
+        }
+      });
+
+      window.addEventListener("load", postHeight);
+      window.addEventListener("resize", postHeight);
+      window.addEventListener("orientationchange", postHeight);
+      if (window.ResizeObserver) {
+        var _appEl = document.getElementById("app");
+        if (_appEl) new ResizeObserver(postHeight).observe(_appEl);
+      }
+      setInterval(postHeight, 1000);
+
       init();
     </script>
   </body>
