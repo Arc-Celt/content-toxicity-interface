@@ -1074,6 +1074,7 @@
         var modal = document.getElementById("measures-modal");
         if (modal.classList.contains("open")) return; // already answering
         modal.classList.add("open");
+        window.parent.postMessage({ type: "measures_open" }, "*");
         showPage(0);
         logEvent("measures_opened");
       }
