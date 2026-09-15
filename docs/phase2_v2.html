@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Social Feed Study</title>
+    <link rel="stylesheet" href="styles_v2.css" />
+    <!-- Microsoft Clarity: attention/heatmap tracking. -->
+    <script type="text/javascript">
+      (function (c, l, a, r, i, t, y) {
+        c[a] =
+          c[a] ||
+          function () {
+            (c[a].q = c[a].q || []).push(arguments);
+          };
+        t = l.createElement(r);
+        t.async = 1;
+        t.src = "https://www.clarity.ms/tag/" + i;
+        y = l.getElementsByTagName(r)[0];
+        y.parentNode.insertBefore(t, y);
+      })(window, document, "clarity", "script", "y07zvlnggc");
+    </script>
+  </head>
+  <body>
+    <div id="loading">Loading&hellip;</div>
+    <div id="error-msg"></div>
+
+    <div id="app">
+      <div id="feed-layout">
+        <div id="feed-root">
+          <div class="post-card">
+            <div class="post-header">
+              <div class="avatar" id="post-avatar"></div>
+              <div>
+                <div class="post-author-name" id="post-name"></div>
+                <div class="post-author-handle" id="post-handle"></div>
+              </div>
+              <button
+                class="action-btn post-header-report"
+                id="btn-report"
+                type="button"
+                title="Report this post"
+                aria-label="Report this post"
+              >
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+                  />
+                  <line x1="4" x2="4" y1="22" y2="15" />
+                </svg>
+                <span id="report-label">Report</span>
+              </button>
+            </div>
+            <div class="post-title" id="post-title"></div>
+            <div id="stim-media"></div>
+            <div class="action-bar">
+              <button class="action-btn" id="btn-like">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"
+                  />
+                  <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                </svg>
+                <span id="like-label">Like</span>
+              </button>
+              <button class="action-btn" id="btn-dislike">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <g transform="rotate(180 12 12)">
+                    <path
+                      d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"
+                    />
+                    <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                  </g>
+                </svg>
+                <span id="dislike-label">Dislike</span>
+              </button>
+              <button class="action-btn" id="btn-reply">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  />
+                </svg>
+                Reply
+              </button>
+              <button class="action-btn" id="btn-repost">
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path d="M17 1l4 4-4 4" />
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                  <path d="M7 23l-4-4 4-4" />
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+                <span id="repost-label">Repost</span>
+              </button>
+            </div>
+            <div class="reply-box">
+              <div
+                class="avatar"
+                style="width: 34px; height: 34px; font-size: 13px"
+              >
+                Y
+              </div>
+              <textarea
+                id="post-reply-input"
+                placeholder="Post your reply"
+                rows="1"
+              ></textarea>
+              <button class="send-btn" id="post-reply-send">Reply</button>
+            </div>
+          </div>
+          <div class="comment-section">
+            <div class="comment-section-title">Comments</div>
+            <div id="comment-list"></div>
+            <button class="view-more-btn" id="view-more-btn">
+              View more comments
+            </button>
+          </div>
+        </div>
+
+        <div id="sidebar">
+          <div class="sidebar-heading">Recommended</div>
+          <div id="reco-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="report-modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <span class="modal-title">Report</span>
+          <button class="modal-close" id="report-close">&times;</button>
+        </div>
+        <div id="report-body">
+          <p style="font-size: 14px; color: #536471; margin-bottom: 8px">
+            Choose the reason that best describes the issue.
+          </p>
+          <div id="report-reasons"></div>
+        </div>
+        <div class="report-thanks" id="report-thanks">
+          <div class="check">&#10003;</div>
+          <div class="msg">Thanks for reporting this</div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="app_v2.js"></script>
+    <script>
+      var SESSION_TYPE = "phase2";
+      var CONTINUE_DELAY_MS = 60 * 1000;
+
+      var allItemsCache = [];
+      var viewedItemIds = new Set();
+      // navigationHistory: [{id, viewedAt, leftAt}]
+      var navigationHistory = [];
+      var p2SidebarClicks = []; // [{src, tgt}, …] in order
+      var p1PriorityClicks = []; // phase1 sidebar clicks except last, in order
+
+      // ---- STANCE STATE (phase-1 context + trace) ----
+      var p1ItemId = "";
+      var p1AllClicks = [];
+      var p1PostLiked = false;
+      var p1PostDisliked = false;
+      var p1PostReposted = false;
+      var p1PostReported = false;
+      var p2StanceTrace = []; // [{item, S, mode}] per reco-list build
+      var p2RecoLists = []; // reco-list composition metadata per build
+      var recoTopPickId = null; // id of the item tagged "For You" in the current list
+
+      // Ordered stance evidence, oldest first. Decay needs sequence, which the
+      // per-item logs do not preserve, so events are appended as they happen.
+      // Each entry is keyed so a toggle off (unlike/un-repost) removes it and
+      // a repeat of the same action cannot double count.
+      var stanceEvents = []; // [{key, sign, points}]
+
+      function setStanceEvent(key, on, sign, points) {
+        stanceEvents = stanceEvents.filter(function (e) {
+          return e.key !== key;
+        });
+        if (on) stanceEvents.push({ key: key, sign: sign, points: points });
+      }
+
+      // ---- PER-ITEM INTERACTION LOG ----
+      var itemLogs = {};
+
+      function getItemLog(itemId) {
+        if (!itemLogs[itemId]) {
+          itemLogs[itemId] = {
+            postLiked: null,
+            postDisliked: null,
+            postReposted: null,
+            postReportedReason: "",
+            postReplies: [],
+            commentReplies: [],
+            commentLikes: {},
+            commentDislikes: {},
+            commentReposts: {},
+            commentReports: [],
+            commentExpansions: 0,
+          };
+        }
+        return itemLogs[itemId];
+      }
+
+      function buildPayload() {
+        var now = new Date().toISOString();
+        var p2Nav = navigationHistory.map(function (n, idx) {
+          var left =
+            n.leftAt || (idx === navigationHistory.length - 1 ? now : null);
+          var secs = left
+            ? Math.round((new Date(left) - new Date(n.viewedAt)) / 1000)
+            : 0;
+          return { id: n.id, secs: secs };
+        });
+
+        var p2PostLikes = {},
+          p2PostDislikes = {},
+          p2PostReposts = {},
+          p2PostReports = [],
+          p2PostReplies = [];
+        var p2CmtExp = {},
+          p2CmtLikes = {},
+          p2CmtDislikes = {},
+          p2CmtReposts = {};
+        var p2CmtReports = [],
+          p2CmtReplies = [];
+
+        Object.keys(itemLogs).forEach(function (id) {
+          var log = itemLogs[id];
+          if (log.postLiked !== null) p2PostLikes[id] = log.postLiked ? 1 : 0;
+          if (log.postDisliked !== null)
+            p2PostDislikes[id] = log.postDisliked ? 1 : 0;
+          if (log.postReposted !== null)
+            p2PostReposts[id] = log.postReposted ? 1 : 0;
+          if (log.postReportedReason)
+            p2PostReports.push({ id: id, reason: log.postReportedReason });
+          var replies = log.postReplies.filter(function (r) {
+            return !r.deleted;
+          });
+          if (replies.length)
+            p2PostReplies.push({
+              id: id,
+              texts: replies.map(function (r) {
+                return r.text;
+              }),
+            });
+          if (log.commentExpansions > 0) p2CmtExp[id] = log.commentExpansions;
+          var likedCids = Object.keys(log.commentLikes).filter(function (k) {
+            return log.commentLikes[k];
+          });
+          if (likedCids.length) p2CmtLikes[id] = likedCids;
+          var dislikedCids = Object.keys(log.commentDislikes).filter(
+            function (k) {
+              return log.commentDislikes[k];
+            },
+          );
+          if (dislikedCids.length) p2CmtDislikes[id] = dislikedCids;
+          var repostedCids = Object.keys(log.commentReposts).filter(
+            function (k) {
+              return log.commentReposts[k];
+            },
+          );
+          if (repostedCids.length) p2CmtReposts[id] = repostedCids;
+          log.commentReports.forEach(function (r) {
+            p2CmtReports.push({ id: id, cid: r.cid, reason: r.reason });
+          });
+          log.commentReplies
+            .filter(function (r) {
+              return !r.deleted;
+            })
+            .forEach(function (r) {
+              p2CmtReplies.push({ id: id, cid: r.cid, text: r.text });
+            });
+        });
+
+        return {
+          p2_nav: JSON.stringify(p2Nav),
+          p2_post_likes: JSON.stringify(p2PostLikes),
+          p2_post_dislikes: JSON.stringify(p2PostDislikes),
+          p2_post_reposts: JSON.stringify(p2PostReposts),
+          p2_post_reports: JSON.stringify(p2PostReports),
+          p2_post_replies: JSON.stringify(p2PostReplies),
+          p2_comment_expansions: JSON.stringify(p2CmtExp),
+          p2_comment_likes: JSON.stringify(p2CmtLikes),
+          p2_comment_dislikes: JSON.stringify(p2CmtDislikes),
+          p2_comment_reposts: JSON.stringify(p2CmtReposts),
+          p2_comment_reports: JSON.stringify(p2CmtReports),
+          p2_comment_replies: JSON.stringify(p2CmtReplies),
+          p2_sidebar_clicks: JSON.stringify(p2SidebarClicks),
+          p2_stance_trace: JSON.stringify(p2StanceTrace),
+          p2_reco_lists: JSON.stringify(p2RecoLists),
+          p2_event_log: JSON.stringify(eventLog),
+        };
+      }
+
+      function sendState() {
+        if (!currentItem) return;
+        window.parent.postMessage(
+          { type: "phase2_update", data: buildPayload() },
+          "*",
+        );
+      }
+
+      function trackInteraction(type, data) {
+        var log = getItemLog(currentItem.id);
+        switch (type) {
+          case "post_likes":
+            postLiked = data.liked;
+            log.postLiked = data.liked;
+            setStanceEvent(
+              "react:" + currentItem.id,
+              data.liked,
+              stanceSign(currentItem),
+              STANCE_WEIGHTS.strong,
+            );
+            break;
+          case "post_dislikes":
+            postDisliked = data.disliked;
+            log.postDisliked = data.disliked;
+            // a dislike is evidence against the post's own stance
+            setStanceEvent(
+              "react:" + currentItem.id,
+              data.disliked,
+              -stanceSign(currentItem),
+              STANCE_WEIGHTS.strong,
+            );
+            break;
+          case "post_reposts":
+            postReposted = data.reposted;
+            log.postReposted = data.reposted;
+            setStanceEvent(
+              "repost:" + currentItem.id,
+              data.reposted,
+              stanceSign(currentItem),
+              STANCE_WEIGHTS.strong,
+            );
+            break;
+          case "post_reports":
+            log.postReportedReason = data.reason;
+            // a report counts against the post's own stance
+            setStanceEvent(
+              "report:" + currentItem.id,
+              true,
+              -stanceSign(currentItem),
+              STANCE_WEIGHTS.strong,
+            );
+            break;
+          case "post_replies":
+            log.postReplies.push({
+              idx: data.reply_index,
+              text: data.body,
+              deleted: false,
+            });
+            break;
+          case "post_reply_interactions":
+            var pr = log.postReplies.find(function (r) {
+              return r.idx === data.reply_index;
+            });
+            if (pr) {
+              if (data.action_type === "edit") pr.text = data.value;
+              if (data.action_type === "delete") pr.deleted = true;
+            }
+            break;
+          case "comment_expansions":
+            log.commentExpansions = data.expansion_index;
+            break;
+          case "comment_likes":
+            log.commentLikes[data.comment_id] = data.liked;
+            break;
+          case "comment_dislikes":
+            log.commentDislikes[data.comment_id] = data.disliked;
+            break;
+          case "comment_reposts":
+            log.commentReposts[data.comment_id] = data.reposted;
+            break;
+          case "comment_reports":
+            log.commentReports.push({
+              cid: data.comment_id,
+              reason: data.reason,
+            });
+            break;
+          case "comment_replies":
+            log.commentReplies.push({
+              cid: data.comment_id,
+              idx: data.reply_index,
+              text: data.body,
+              deleted: false,
+            });
+            break;
+          case "comment_reply_interactions":
+            var cr = log.commentReplies.find(function (r) {
+              return r.cid === data.comment_id && r.idx === data.reply_index;
+            });
+            if (cr) {
+              if (data.action_type === "edit") cr.text = data.value;
+              if (data.action_type === "delete") cr.deleted = true;
+            }
+            break;
+        }
+        sendState();
+      }
+
+      async function init() {
+        var grpRes = await db
+          .from("groups")
+          .select("stance, format")
+          .eq("group_code", GROUP)
+          .single();
+        if (grpRes.error || !grpRes.data) {
+          showError(
+            "Could not load study configuration. Please contact the researcher.",
+          );
+          return;
+        }
+        condition = grpRes.data.format;
+        var stance = grpRes.data.stance;
+
+        allItemsCache = loadCached("cache_items");
+        if (!allItemsCache) {
+          var itemsRes = await db.from("items").select("*");
+          if (itemsRes.error || !itemsRes.data || !itemsRes.data.length) {
+            showError(
+              "Could not load study content. Please contact the researcher.",
+            );
+            return;
+          }
+          allItemsCache = itemsRes.data;
+          saveCached("cache_items", allItemsCache);
+        }
+
+        allSimilarities = loadCached("cache_similarities");
+        if (!allSimilarities || !allSimilarities.length) {
+          try {
+            var simRes = await fetch("data/similarities.json");
+            if (!simRes.ok) throw new Error("HTTP " + simRes.status);
+            allSimilarities = await simRes.json();
+          } catch (e) {
+            allSimilarities = [];
+          }
+          if (!allSimilarities.length) {
+            showError(
+              "Could not load study content. Please contact the researcher.",
+            );
+            return;
+          }
+          saveCached("cache_similarities", allSimilarities);
+        }
+
+        // Phase1 context from URL params
+        p1ItemId = params.get("p1_item_id") || "";
+        var p1LastClick = params.get("p1_last_click") || "";
+        p1PostLiked = params.get("p1_post_liked") === "1";
+        p1PostDisliked = params.get("p1_post_disliked") === "1";
+        p1PostReposted = params.get("p1_post_reposted") === "1";
+        p1PostReported = !!(params.get("p1_post_reported") || "");
+
+        // Parse all phase1 sidebar clicks to build priority list.
+        var p1ClicksRaw = params.get("p1_sidebar_clicks_raw") || "";
+        p1AllClicks = p1ClicksRaw ? p1ClicksRaw.split(",").filter(Boolean) : [];
+        // Priority = all clicks except the last (last becomes the main post).
+        // The most recently clicked of these (2nd-to-last click overall)
+        // leads the pinned block and gets the "For You" tag; the rest keep
+        // their original click order behind it.
+        p1PriorityClicks = p1AllClicks.filter(function (id) {
+          return id !== p1LastClick;
+        });
+        if (p1PriorityClicks.length > 1) {
+          p1PriorityClicks.unshift(p1PriorityClicks.pop());
+        }
+
+        if (p1ItemId) viewedItemIds.add(p1ItemId);
+
+        var pool = shuffle(allItemsCache.slice());
+        if (p1LastClick) {
+          currentItem =
+            allItemsCache.find(function (i) {
+              return i.id === p1LastClick;
+            }) ||
+            pool.find(function (i) {
+              return !viewedItemIds.has(i.id);
+            }) ||
+            pool[0];
+        } else {
+          currentItem =
+            pool.find(function (i) {
+              return !viewedItemIds.has(i.id);
+            }) || pool[0];
+        }
+
+        var cmtRes = await db
+          .from("comments")
+          .select("*")
+          .eq("item_id", currentItem.id)
+          .order("display_order");
+        allComments = cmtRes.data || [];
+        allComments.forEach(function (c) {
+          commentStates[c.id] = {
+            liked: false,
+            disliked: false,
+            reposted: false,
+            replyCount: 0,
+          };
+        });
+
+        seedPhase1StanceEvents();
+        loadRecos();
+
+        var now = new Date().toISOString();
+        viewedItemIds.add(currentItem.id);
+        navigationHistory.push({ id: currentItem.id, viewedAt: now });
+
+        wirePostBar();
+        render();
+        startContinueTimer();
+        sendState();
+      }
+
+      // Seeds stanceEvents with the phase-1 evidence carried over in the URL.
+      // Reactions to the main post are placed before the sidebar clicks: the
+      // params give no ordering between them, and this matches the usual flow
+      // of viewing the post first and browsing the sidebar after.
+      function seedPhase1StanceEvents() {
+        var byId = {};
+        allItemsCache.forEach(function (i) {
+          byId[i.id] = i;
+        });
+        var p1Item = byId[p1ItemId];
+        if (p1Item) {
+          var sig1 = stanceSign(p1Item);
+          if (p1PostLiked) {
+            setStanceEvent("p1react", true, sig1, STANCE_WEIGHTS.strong);
+          } else if (p1PostDisliked) {
+            setStanceEvent("p1react", true, -sig1, STANCE_WEIGHTS.strong);
+          }
+          if (p1PostReposted) {
+            setStanceEvent("p1repost", true, sig1, STANCE_WEIGHTS.strong);
+          }
+          if (p1PostReported) {
+            setStanceEvent("p1report", true, -sig1, STANCE_WEIGHTS.strong);
+          }
+        }
+        p1AllClicks.forEach(function (id) {
+          if (byId[id]) {
+            setStanceEvent(
+              "p1click:" + id,
+              true,
+              stanceSign(byId[id]),
+              STANCE_WEIGHTS.click,
+            );
+          }
+        });
+      }
+
+      // Beta(alpha, beta) belief over the ordered evidence, recomputed from
+      // scratch each call so undo stays consistent. Every action discounts the
+      // running totals by STANCE_DECAY first, so recent behavior dominates.
+      // A permanent Beta(1,1) floor keeps alpha and beta >= 1, so the posterior
+      // stays well formed however long the session runs.
+      function computeStance() {
+        // party answer ages out of the window too
+        var events = [];
+        var pe = partyPseudoEvent(PRE_PARTY);
+        if (pe) events.push(pe);
+        events = events.concat(stanceEvents);
+
+        var alpha = 1; // anti evidence
+        var beta = 1; // pro evidence
+        events.slice(-STANCE_WINDOW).forEach(function (e) {
+          if (e.sign > 0) beta += e.points;
+          else alpha += e.points;
+        });
+
+        return { alpha: alpha, beta: beta };
+      }
+
+      function loadRecos() {
+        var unviewed = allItemsCache.filter(function (i) {
+          return i.id !== currentItem.id && !viewedItemIds.has(i.id);
+        });
+        // Unviewed phase-1 clicks stay pinned on top; the rest is filled by
+        // the stance-adaptive list.
+        var priority = p1PriorityClicks
+          .map(function (id) {
+            return unviewed.find(function (i) {
+              return i.id === id;
+            });
+          })
+          .filter(Boolean);
+        var belief = computeStance();
+        var reco = buildRecoList(
+          belief.alpha,
+          belief.beta,
+          currentItem.id,
+          unviewed,
+          priority,
+        );
+        recoItems = reco.items;
+        // "For You" marks whatever leads the list
+        recoTopPickId = recoItems.length ? recoItems[0].id : null;
+        p2StanceTrace.push({
+          item: currentItem.id,
+          alpha: reco.meta.alpha,
+          beta: reco.meta.beta,
+          mean: reco.meta.mean,
+          sd: reco.meta.sd,
+          draws: reco.meta.draws,
+        });
+        p2RecoLists.push(reco.meta);
+      }
+
+      async function navigateTo(itemId) {
+        var leftAt = new Date().toISOString();
+        navigationHistory[navigationHistory.length - 1].leftAt = leftAt;
+
+        document.getElementById("feed-root").style.opacity = "0.4";
+
+        var itemRes = await db
+          .from("items")
+          .select("*")
+          .eq("id", itemId)
+          .single();
+        if (itemRes.error || !itemRes.data) {
+          document.getElementById("feed-root").style.opacity = "1";
+          return;
+        }
+
+        currentItem = itemRes.data;
+        viewedItemIds.add(itemId);
+        var now = new Date().toISOString();
+        navigationHistory.push({ id: itemId, viewedAt: now });
+
+        var cmtRes = await db
+          .from("comments")
+          .select("*")
+          .eq("item_id", itemId)
+          .order("display_order");
+        allComments = cmtRes.data || [];
+
+        commentStates = {};
+        allComments.forEach(function (c) {
+          commentStates[c.id] = {
+            liked: false,
+            disliked: false,
+            reposted: false,
+            replyCount: 0,
+          };
+        });
+        renderedCmtIds = new Set();
+        visibleCount = INITIAL_COMMENTS;
+        expansionIdx = 0;
+        postLiked = false;
+        postDisliked = false;
+        postReposted = false;
+        postReplyCount = 0;
+        reportTarget = null;
+
+        loadRecos();
+        clearFeedDOM();
+        render();
+        sendState();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        document.getElementById("feed-root").style.opacity = "1";
+      }
+
+      function clearFeedDOM() {
+        document.getElementById("comment-list").innerHTML = "";
+        var ta = document.getElementById("post-reply-input");
+        var send = document.getElementById("post-reply-send");
+        ta.value = "";
+        ta.style.height = "auto";
+        ta.style.minHeight = "38px";
+        send.style.display = "none";
+        document.getElementById("btn-like").style.color = "#536471";
+        document.getElementById("btn-like").querySelector("svg").outerHTML =
+          SVG_LIKE;
+        document.getElementById("like-label").textContent = "Like";
+        document.getElementById("btn-dislike").style.color = "#536471";
+        document.getElementById("btn-dislike").querySelector("svg").outerHTML =
+          SVG_DISLIKE;
+        document.getElementById("dislike-label").textContent = "Dislike";
+        document.getElementById("btn-repost").style.color = "#536471";
+        document.getElementById("btn-repost").querySelector("svg").outerHTML =
+          SVG_REPOST;
+        document.getElementById("repost-label").textContent = "Repost";
+        document.getElementById("btn-report").style.color = "#536471";
+        document.getElementById("btn-report").querySelector("svg").outerHTML =
+          SVG_REPORT;
+        document.getElementById("report-label").textContent = "Report";
+      }
+
+      function renderSidebar() {
+        var list = document.getElementById("reco-list");
+        list.innerHTML = "";
+        if (!recoItems.length) {
+          list.innerHTML =
+            '<p style="color:#536471;font-size:14px;padding:8px 0">You\'ve explored all available posts.</p>';
+          return;
+        }
+        recoItems.forEach(function (item) {
+          var card = document.createElement("div");
+          card.className = "reco-card";
+          var recoUser = (item.author || "?").replace(/^@/, "");
+          card.innerHTML =
+            '<div class="reco-card-header">' +
+            (item.id === recoTopPickId
+              ? '<span class="reco-foryou-tag">For You</span>'
+              : "") +
+            '<div class="reco-avatar">' +
+            esc(recoUser[0].toUpperCase()) +
+            "</div>" +
+            '<span class="reco-author">@' +
+            esc(recoUser) +
+            "</span>" +
+            "</div>" +
+            '<div class="reco-body">' +
+            (condition === "video" && item.thumbnail_url
+              ? '<img class="reco-thumb" src="' +
+                esc(item.thumbnail_url) +
+                '" alt="" />'
+              : "") +
+            '<div class="reco-preview">' +
+            esc(recoPreview(item)) +
+            "</div>" +
+            "</div>";
+          card.addEventListener("click", function () {
+            p2SidebarClicks.push({ src: currentItem.id, tgt: item.id });
+            setStanceEvent(
+              "click:" + item.id,
+              true,
+              stanceSign(item),
+              STANCE_WEIGHTS.click,
+            );
+            navigateTo(item.id);
+          });
+          list.appendChild(card);
+        });
+      }
+
+      function handleContinue() {
+        if (continueFired) return;
+        continueFired = true;
+        navigationHistory[navigationHistory.length - 1].leftAt =
+          new Date().toISOString();
+        window.parent.postMessage(
+          { type: "phase2_complete", data: buildPayload() },
+          "*",
+        );
+      }
+
+      // IFRAME AUTO-RESIZE
+      var lastSentHeight = 0;
+      var viewTop = 0;
+      var viewHeight = 0;
+
+      function contentHeight() {
+        var app = document.getElementById("app");
+        if (app && getComputedStyle(app).display !== "none") {
+          return Math.ceil(app.getBoundingClientRect().height) + 24;
+        }
+        return 600; // loading or error state
+      }
+
+      function postHeight() {
+        var h = contentHeight();
+        if (Math.abs(h - lastSentHeight) < 4) return; // damp resize feedback
+        lastSentHeight = h;
+        window.parent.postMessage({ type: "iframe_height", height: h }, "*");
+      }
+
+      function placeModals() {
+        if (!viewHeight) return;
+        var m = document.querySelectorAll(".modal-overlay");
+        for (var i = 0; i < m.length; i++) {
+          m[i].style.position = "absolute";
+          m[i].style.left = "0";
+          m[i].style.right = "0";
+          m[i].style.bottom = "auto";
+          m[i].style.top = viewTop + "px";
+          m[i].style.height = viewHeight + "px";
+        }
+      }
+
+      window.addEventListener("message", function (e) {
+        var d = e.data;
+        if (d && d.type === "qualtrics_viewport") {
+          viewTop = d.top || 0;
+          viewHeight = d.height || 0;
+          placeModals();
+        }
+      });
+
+      window.addEventListener("load", postHeight);
+      window.addEventListener("resize", postHeight);
+      window.addEventListener("orientationchange", postHeight);
+      if (window.ResizeObserver) {
+        var _appEl = document.getElementById("app");
+        if (_appEl) new ResizeObserver(postHeight).observe(_appEl);
+      }
+      setInterval(postHeight, 1000);
+
+      init();
+    </script>
+  </body>
+</html>

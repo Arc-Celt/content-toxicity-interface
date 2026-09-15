@@ -1,0 +1,1620 @@
+// ---- CONFIG (shared) ----
+var SUPABASE_URL = "https://nqyfdluxupdxebziunfr.supabase.co";
+var SUPABASE_KEY = "sb_publishable_Bft66-E0T9pF5oSVcnZ7_A_22XaT3FH";
+var INITIAL_COMMENTS = 2;
+var COMMENTS_PER_LOAD = 2;
+var RECO_COUNT = 4;
+
+var REPORT_REASONS = [
+  { id: "spam_misleading", label: "Spam or misleading" },
+  { id: "hate_harassment", label: "Hate speech or harassment" },
+  { id: "abusive_language", label: "Abusive or harmful language" },
+  { id: "violent_content", label: "Threatening or violent content" },
+  { id: "other", label: "Other" },
+];
+
+// ---- ICON SVG STRINGS ----
+var SVG_LIKE =
+  '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"></path><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>';
+var SVG_LIKE_ON =
+  '<svg fill="currentColor" height="18" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"></path><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3z"></path></svg>';
+// Dislike is the like glyph rotated 180 degrees, so the pair stays matched.
+var SVG_DISLIKE =
+  '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><g transform="rotate(180 12 12)"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"></path><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></g></svg>';
+var SVG_DISLIKE_ON =
+  '<svg fill="currentColor" height="18" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18"><g transform="rotate(180 12 12)"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"></path><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3z"></path></g></svg>';
+var SVG_REPLY =
+  '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+var SVG_REPOST =
+  '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>';
+var SVG_REPOST_ON =
+  '<svg height="18" style="overflow:visible" viewBox="0 0 24 24" width="18"><circle cx="12" cy="12" fill="currentColor" r="17"></circle><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></g></svg>';
+var SVG_REPORT =
+  '<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>';
+var SVG_REPORT_ON =
+  '<svg fill="currentColor" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>';
+
+// ---- SUPABASE + URL PARAMS ----
+var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var params = new URLSearchParams(window.location.search);
+var PID = params.get("pid") || "test_" + Date.now();
+var GROUP = params.get("group") || "A1";
+
+// ---- CONTENT CACHE ----
+// items/item_similarities
+var CONTENT_VERSION = "3";
+
+function loadCached(key) {
+  try {
+    var raw = localStorage.getItem(key);
+    var parsed = raw && JSON.parse(raw);
+    return parsed && parsed.version === CONTENT_VERSION ? parsed.data : null;
+  } catch (e) {
+    return null; // storage unavailable/corrupted
+  }
+}
+
+function saveCached(key, data) {
+  try {
+    localStorage.setItem(
+      key,
+      JSON.stringify({ version: CONTENT_VERSION, data: data }),
+    );
+  } catch (e) {
+    // storage full or blocked (e.g. some private-browsing modes) -- harmless, just skip
+  }
+}
+
+// ---- STANCE RECOMMENDER CONFIG ----
+// theta ~ Beta(alpha, beta) with alpha = anti evidence, beta = pro evidence.
+// Each sidebar slot draws its own theta and shows a pro post if theta < 0.5.
+// Only the last STANCE_WINDOW actions count.
+var STANCE_WEIGHTS = { strong: 0.25, click: 0.125 }; // like/repost/report vs clicks
+var STANCE_PRIOR_WEIGHTS = { strong: 0.5, click: 0.25 };
+var STANCE_WINDOW = 4; // actions retained
+var PRE_PARTY = parseFloat(params.get("pre_party")) || 0; // ±2/±1/0
+
+function partyPseudoEvent(preParty) {
+  var w = STANCE_PRIOR_WEIGHTS;
+  if (preParty === 2) return { sign: 1, points: w.strong }; // Dem
+  if (preParty === 1) return { sign: 1, points: w.click }; // ~Dem
+  if (preParty === -1) return { sign: -1, points: w.click }; // ~Rep
+  if (preParty === -2) return { sign: -1, points: w.strong }; // Rep
+  return null; // independent / neither
+}
+
+function betaMean(alpha, beta) {
+  return alpha / (alpha + beta);
+}
+
+function betaSD(alpha, beta) {
+  var n = alpha + beta;
+  return Math.sqrt((alpha * beta) / (n * n * (n + 1)));
+}
+
+function round4(x) {
+  return Math.round(x * 10000) / 10000;
+}
+
+// ---- RANDOM DRAWS ----
+function randNormal() {
+  var u = 0;
+  var v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function randGamma(shape) {
+  var d = shape - 1 / 3;
+  var c = 1 / Math.sqrt(9 * d);
+  for (;;) {
+    var x;
+    var v;
+    do {
+      x = randNormal();
+      v = 1 + c * x;
+    } while (v <= 0);
+    v = v * v * v;
+    var u = Math.random();
+    if (u < 1 - 0.0331 * x * x * x * x) return d * v;
+    if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+  }
+}
+
+function randBeta(alpha, beta) {
+  var x = randGamma(alpha);
+  var y = randGamma(beta);
+  return x / (x + y);
+}
+
+// ---- SHARED STATE ----
+// SESSION_TYPE and CONTINUE_DELAY_MS are declared by each page script.
+var currentItem = null;
+var allComments = [];
+var recoItems = [];
+var allItemsCache = [];
+var allSimilarities = [];
+var condition = null;
+var visibleCount = INITIAL_COMMENTS;
+var expansionIdx = 0;
+var recoClickOrder = 0;
+var postLiked = false;
+var postDisliked = false;
+var postReposted = false;
+var postReplyCount = 0;
+var commentStates = {};
+var renderedCmtIds = new Set();
+var pendingWrites = [];
+var reportTarget = null;
+var continueFired = false;
+
+// ---- INTERACTION TRACKING ----
+// Every interaction funnels through queueWrite, so it is the one place that
+// needs to stamp the event log. ISO strings match the navigationHistory format.
+var eventLog = []; // [{t, action, item, detail}]
+
+function logEvent(action, detail) {
+  eventLog.push({
+    t: new Date().toISOString(),
+    action: action,
+    item: currentItem ? currentItem.id : "",
+    detail: detail === undefined ? "" : detail,
+  });
+}
+
+// trackInteraction(type, data) is defined by each page script.
+function queueWrite(table, data) {
+  logEvent(table, (data && (data.comment_id || data.clicked_item_id)) || "");
+  trackInteraction(table, data);
+}
+
+function flushWrites() {}
+
+// ---- UI HELPERS ----
+function mkAction(icon) {
+  var b = document.createElement("button");
+  b.type = "button";
+  b.style.cssText =
+    "background:none; border:none; cursor:pointer; color:inherit; display:flex; align-items:center; gap:6px; font-size:13px; padding:6px; margin:-6px; border-radius:999px; transition:background-color .16s ease, color .16s ease, transform .08s ease;";
+  b.innerHTML = '<span class="ico">' + icon + "</span>";
+  addButtonFeedback(b);
+  return b;
+}
+
+function mkActionText(label) {
+  var b = document.createElement("button");
+  b.type = "button";
+  b.style.cssText =
+    "background:none; border:none; cursor:pointer; color:#536471; font-size:13px; padding:4px 6px; margin:-4px -6px; border-radius:999px; font-family:inherit; transition:background-color .16s ease, color .16s ease, transform .08s ease;";
+  b.textContent = label;
+  addButtonFeedback(b);
+  return b;
+}
+
+function addButtonFeedback(el) {
+  var activeBg = "rgba(15,20,25,.06)";
+  el.addEventListener("mouseenter", function () {
+    el.style.background = activeBg;
+  });
+  el.addEventListener("mouseleave", function () {
+    el.style.background = "none";
+    el.style.transform = "scale(1)";
+  });
+  el.addEventListener("mousedown", function () {
+    el.style.transform = "scale(.96)";
+  });
+  el.addEventListener("mouseup", function () {
+    el.style.transform = "scale(1)";
+  });
+}
+
+function styleTextarea(ta) {
+  ta.style.transition =
+    "border-color .16s ease, box-shadow .16s ease, min-height .16s ease";
+  ta.addEventListener("focus", function () {
+    ta.style.borderColor = "#1d9bf0";
+    ta.style.boxShadow = "0 0 0 2px rgba(29,155,240,.18)";
+  });
+  ta.addEventListener("blur", function () {
+    ta.style.borderColor = "#cfd9de";
+    ta.style.boxShadow = "none";
+  });
+}
+
+function stylePrimaryButton(btn) {
+  btn.style.transition = "background-color .16s ease, transform .08s ease";
+  btn.addEventListener("mouseenter", function () {
+    btn.style.background = "#272c30";
+  });
+  btn.addEventListener("mouseleave", function () {
+    btn.style.background = "#0f1419";
+    btn.style.transform = "scale(1)";
+  });
+  btn.addEventListener("mousedown", function () {
+    btn.style.transform = "scale(.97)";
+  });
+  btn.addEventListener("mouseup", function () {
+    btn.style.transform = "scale(1)";
+  });
+}
+
+function animateReplyBox(box) {
+  box.style.opacity = "0";
+  box.style.transform = "translateY(-4px)";
+  box.style.transition = "opacity .16s ease, transform .16s ease";
+  setTimeout(function () {
+    box.style.opacity = "1";
+    box.style.transform = "translateY(0)";
+  }, 0);
+}
+
+function addDismissOnOutside(box, textarea, onDismiss) {
+  setTimeout(function () {
+    document.addEventListener("mousedown", handleOutside);
+  }, 0);
+  function handleOutside(e) {
+    if (!box.parentNode) {
+      document.removeEventListener("mousedown", handleOutside);
+      return;
+    }
+    if (box.contains(e.target)) return;
+    if (textarea.value.trim()) return;
+    document.removeEventListener("mousedown", handleOutside);
+    onDismiss();
+  }
+}
+
+// ---- RENDER ----
+// renderSidebar() is defined by each page script.
+function render() {
+  renderPost();
+  renderComments();
+  renderSidebar();
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+
+// Play/pause/ended are logged straight to eventLog rather than through
+// queueWrite: they are not interactions the per-item logs model. The YouTube
+// branch is unreachable in this study (every item is an S3 mp4), so no
+// IFrame API is needed.
+function wireVideoEvents(video) {
+  if (!video) return;
+  ["play", "pause", "ended"].forEach(function (evt) {
+    video.addEventListener(evt, function () {
+      logEvent("video_" + evt, String(Math.round(video.currentTime)));
+      if (typeof sendState === "function") sendState();
+    });
+  });
+}
+
+function renderPost() {
+  var postUser = (currentItem.author || "user").replace(/^@/, "");
+  document.getElementById("post-avatar").textContent =
+    postUser[0].toUpperCase();
+  document.getElementById("post-name").textContent = "@" + postUser;
+  document.getElementById("post-handle").textContent = "";
+  document.getElementById("post-title").innerHTML =
+    currentItem.title && currentItem.title !== "nan"
+      ? linkifyHashtags(currentItem.title)
+      : "";
+  var media = document.getElementById("stim-media");
+  media.innerHTML = "";
+  if (condition === "video" && currentItem.video_url) {
+    var vid = youtubeId(currentItem.video_url);
+    if (vid) {
+      media.innerHTML =
+        '<iframe src="https://www.youtube.com/embed/' +
+        vid +
+        '?rel=0" allowfullscreen></iframe>';
+    } else {
+      media.innerHTML =
+        '<video src="' +
+        esc(currentItem.video_url) +
+        '" controls style="width:100%;display:block;border:none;max-height:560px;background:#000;"></video>';
+      wireVideoEvents(media.querySelector("video"));
+    }
+  } else if (currentItem.transcript) {
+    try {
+      var paras = JSON.parse(currentItem.transcript);
+      media.innerHTML =
+        '<div class="transcript-box">' +
+        (Array.isArray(paras) ? paras : [paras])
+          .map(function (p) {
+            return '<p style="margin-bottom:10px">' + esc(p) + "</p>";
+          })
+          .join("") +
+        "</div>";
+    } catch (e) {
+      media.innerHTML =
+        '<div class="transcript-box">' + esc(currentItem.transcript) + "</div>";
+    }
+  }
+}
+
+function renderComments() {
+  var list = document.getElementById("comment-list");
+  allComments.slice(0, visibleCount).forEach(function (c) {
+    if (!renderedCmtIds.has(c.id)) {
+      renderedCmtIds.add(c.id);
+      list.appendChild(buildComment(c));
+    }
+  });
+  document.getElementById("view-more-btn").style.display =
+    visibleCount < allComments.length ? "block" : "none";
+}
+
+// ---- BUILD COMMENT ----
+function buildComment(c) {
+  var st = commentStates[c.id];
+  var username = (c.author || "user").replace(/^@/, "");
+
+  var wrap = document.createElement("div");
+  wrap.style.cssText =
+    "padding:18px 16px 14px; border-top:1px solid #eff3f4; position:relative;";
+
+  var topRow = document.createElement("div");
+  // room for the absolutely positioned report button in the corner
+  topRow.style.cssText = "display:flex; gap:10px; padding-right:28px;";
+
+  var avatar = document.createElement("div");
+  avatar.style.cssText =
+    "flex:0 0 36px; height:36px; border-radius:50%; background:#cfd9de; display:flex; align-items:center; justify-content:center; font-size:14px; color:#536471; font-weight:700; flex-shrink:0;";
+  avatar.textContent = username[0].toUpperCase();
+
+  var body = document.createElement("div");
+  body.style.cssText = "flex:1; min-width:0;";
+
+  var header = document.createElement("div");
+  header.style.cssText = "font-size:14px;";
+  header.innerHTML =
+    '<span style="font-weight:700; color:#0f1419;">@' +
+    esc(username) +
+    "</span>";
+
+  var textEl = document.createElement("div");
+  textEl.style.cssText =
+    "font-size:14px; color:#0f1419; margin:2px 0 8px; word-wrap:break-word;";
+  textEl.textContent = c.body;
+
+  var threadEl = document.createElement("div");
+
+  var actions = document.createElement("div");
+  actions.style.cssText =
+    "display:flex; justify-content:space-around; align-items:center; color:#536471; font-size:13px; padding:8px 0 2px;";
+
+  var likeBtn = mkAction(SVG_LIKE);
+  var dislikeBtn = mkAction(SVG_DISLIKE);
+  var replyBtn = mkAction(SVG_REPLY);
+  var repostBtn = mkAction(SVG_REPOST);
+  var reportBtn = mkAction(SVG_REPORT);
+
+  // Report sits in the card's top-right instead of the row: own replies carry
+  // Edit and Delete, so a fifth icon would crowd the narrow layouts.
+  reportBtn.style.cssText +=
+    "position:absolute; top:12px; right:12px; padding:6px; margin:0; color:#536471;";
+
+  function paintCommentLike() {
+    likeBtn.style.color = st.liked ? "#DC267F" : "#536471";
+    likeBtn.querySelector("svg").outerHTML = st.liked ? SVG_LIKE_ON : SVG_LIKE;
+  }
+  function paintCommentDislike() {
+    dislikeBtn.style.color = st.disliked ? "#785EF0" : "#536471";
+    dislikeBtn.querySelector("svg").outerHTML = st.disliked
+      ? SVG_DISLIKE_ON
+      : SVG_DISLIKE;
+  }
+
+  paintCommentLike();
+  paintCommentDislike();
+  repostBtn.style.color = st.reposted ? "#648FFF" : "#536471";
+  repostBtn.querySelector("svg").outerHTML = st.reposted
+    ? SVG_REPOST_ON
+    : SVG_REPOST;
+
+  likeBtn.addEventListener("click", function () {
+    st.liked = !st.liked;
+    if (st.liked && st.disliked) {
+      st.disliked = false;
+      paintCommentDislike();
+      queueWrite("comment_dislikes", {
+        pid: PID,
+        session_type: SESSION_TYPE,
+        item_id: currentItem.id,
+        comment_id: c.id,
+        disliked: false,
+      });
+    }
+    paintCommentLike();
+    queueWrite("comment_likes", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      comment_id: c.id,
+      liked: st.liked,
+    });
+  });
+
+  dislikeBtn.addEventListener("click", function () {
+    st.disliked = !st.disliked;
+    if (st.disliked && st.liked) {
+      st.liked = false;
+      paintCommentLike();
+      queueWrite("comment_likes", {
+        pid: PID,
+        session_type: SESSION_TYPE,
+        item_id: currentItem.id,
+        comment_id: c.id,
+        liked: false,
+      });
+    }
+    paintCommentDislike();
+    queueWrite("comment_dislikes", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      comment_id: c.id,
+      disliked: st.disliked,
+    });
+  });
+
+  repostBtn.addEventListener("click", function () {
+    st.reposted = !st.reposted;
+    repostBtn.style.color = st.reposted ? "#648FFF" : "#536471";
+    repostBtn.querySelector("svg").outerHTML = st.reposted
+      ? SVG_REPOST_ON
+      : SVG_REPOST;
+    queueWrite("comment_reposts", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      comment_id: c.id,
+      reposted: st.reposted,
+    });
+  });
+
+  replyBtn.addEventListener("click", function () {
+    if (body.querySelector(".reply-box-cmt")) {
+      body.querySelector(".reply-box-cmt textarea").focus();
+      return;
+    }
+    var box = document.createElement("div");
+    box.className = "reply-box-cmt";
+    box.style.cssText =
+      "margin-top:8px; display:flex; gap:6px; align-items:flex-start;";
+    var ta = document.createElement("textarea");
+    ta.placeholder = "Post your reply";
+    ta.rows = 1;
+    ta.style.cssText =
+      "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:8px; font-size:14px; font-family:inherit; resize:none; min-height:70px; box-sizing:border-box; overflow:hidden;";
+    styleTextarea(ta);
+    ta.addEventListener("focus", function () {
+      ta.style.minHeight = "70px";
+    });
+    ta.addEventListener("input", function () {
+      ta.style.height = "auto";
+      ta.style.height = ta.scrollHeight + "px";
+    });
+    var send = document.createElement("button");
+    send.type = "button";
+    send.textContent = "Reply";
+    send.style.cssText =
+      "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+    stylePrimaryButton(send);
+    send.addEventListener("click", function () {
+      var txt = ta.value.trim();
+      if (!txt) return;
+      st.replyCount++;
+      var replyObj = { index: st.replyCount, text: txt };
+      queueWrite("comment_replies", {
+        pid: PID,
+        session_type: SESSION_TYPE,
+        item_id: currentItem.id,
+        comment_id: c.id,
+        body: txt,
+        reply_index: st.replyCount,
+      });
+      renderCommentReply(threadEl, replyObj, st, c.id);
+      box.remove();
+    });
+    box.appendChild(ta);
+    box.appendChild(send);
+    body.appendChild(box);
+    animateReplyBox(box);
+    addDismissOnOutside(box, ta, function () {
+      box.remove();
+    });
+    ta.focus();
+  });
+
+  reportBtn.addEventListener("click", function () {
+    reportTarget = { type: "comment", commentId: c.id, btn: reportBtn };
+    openReportModal();
+  });
+
+  actions.appendChild(likeBtn);
+  actions.appendChild(dislikeBtn);
+  actions.appendChild(replyBtn);
+  actions.appendChild(repostBtn);
+  body.appendChild(header);
+  body.appendChild(textEl);
+  topRow.appendChild(avatar);
+  topRow.appendChild(body);
+  wrap.appendChild(reportBtn); // absolutely positioned in the card corner
+  wrap.appendChild(topRow);
+  wrap.appendChild(actions);
+  threadEl.style.cssText = "padding-left: 46px;";
+  wrap.appendChild(threadEl);
+  return wrap;
+}
+
+function renderCommentReply(container, replyObj, cmtState, commentId) {
+  var editing = false;
+  var liked = false,
+    disliked = false,
+    reposted = false;
+
+  var wrap = document.createElement("div");
+  wrap.style.cssText =
+    "margin-top:14px; padding:10px 0 0 12px; border-left:2px solid #eff3f4; position:relative;";
+
+  var topRow = document.createElement("div");
+  topRow.style.cssText = "display:flex; gap:8px;";
+
+  var avatar = document.createElement("div");
+  avatar.style.cssText =
+    "flex:0 0 28px; height:28px; border-radius:50%; background:#cfd9de; display:flex; align-items:center; justify-content:center; font-size:12px; color:#536471; font-weight:700; flex-shrink:0;";
+  avatar.textContent = "Y";
+
+  var body = document.createElement("div");
+  body.style.cssText = "flex:1; min-width:0;";
+
+  var header = document.createElement("div");
+  header.style.cssText = "font-size:13px;";
+  header.innerHTML =
+    '<span style="font-weight:700; color:#0f1419;">You</span> <span style="color:#536471;">@you</span>';
+
+  var textEl = document.createElement("div");
+  textEl.style.cssText =
+    "font-size:13px; color:#0f1419; margin:3px 0 0; word-wrap:break-word;";
+  textEl.textContent = replyObj.text;
+
+  var actions = document.createElement("div");
+  actions.style.cssText =
+    "display:flex; justify-content:space-around; align-items:center; color:#536471; font-size:13px; padding:7px 0 2px;";
+
+  var likeBtn = mkAction(SVG_LIKE);
+  var dislikeBtn = mkAction(SVG_DISLIKE);
+  var replyBtn = mkAction(SVG_REPLY);
+  var repostBtn = mkAction(SVG_REPOST);
+  var editBtn = mkActionText("Edit");
+  var deleteBtn = mkActionText("Delete");
+
+  likeBtn.addEventListener("click", function () {
+    liked = !liked;
+    if (liked && disliked) {
+      disliked = false;
+      dislikeBtn.style.color = "#536471";
+      dislikeBtn.querySelector("svg").outerHTML = SVG_DISLIKE;
+    }
+    likeBtn.style.color = liked ? "#DC267F" : "#536471";
+    likeBtn.querySelector("svg").outerHTML = liked ? SVG_LIKE_ON : SVG_LIKE;
+    queueWrite("comment_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      comment_id: commentId,
+      reply_index: replyObj.index,
+      action_type: liked ? "like" : "unlike",
+    });
+  });
+
+  dislikeBtn.addEventListener("click", function () {
+    disliked = !disliked;
+    if (disliked && liked) {
+      liked = false;
+      likeBtn.style.color = "#536471";
+      likeBtn.querySelector("svg").outerHTML = SVG_LIKE;
+    }
+    dislikeBtn.style.color = disliked ? "#785EF0" : "#536471";
+    dislikeBtn.querySelector("svg").outerHTML = disliked
+      ? SVG_DISLIKE_ON
+      : SVG_DISLIKE;
+    queueWrite("comment_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      comment_id: commentId,
+      reply_index: replyObj.index,
+      action_type: disliked ? "dislike" : "undislike",
+    });
+  });
+
+  repostBtn.addEventListener("click", function () {
+    reposted = !reposted;
+    repostBtn.style.color = reposted ? "#648FFF" : "#536471";
+    repostBtn.querySelector("svg").outerHTML = reposted
+      ? SVG_REPOST_ON
+      : SVG_REPOST;
+    queueWrite("comment_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      comment_id: commentId,
+      reply_index: replyObj.index,
+      action_type: reposted ? "repost" : "unrepost",
+    });
+  });
+
+  replyBtn.addEventListener("click", function () {
+    if (body.querySelector(".reply-box-nested")) {
+      body.querySelector(".reply-box-nested textarea").focus();
+      return;
+    }
+    var box = document.createElement("div");
+    box.className = "reply-box-nested";
+    box.style.cssText =
+      "margin-top:6px; display:flex; gap:6px; align-items:flex-start;";
+    var ta = document.createElement("textarea");
+    ta.placeholder = "Post your reply";
+    ta.rows = 1;
+    ta.style.cssText =
+      "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:6px 8px; font-size:13px; font-family:inherit; resize:none; min-height:60px; box-sizing:border-box; overflow:hidden;";
+    styleTextarea(ta);
+    ta.addEventListener("input", function () {
+      ta.style.height = "auto";
+      ta.style.height = ta.scrollHeight + "px";
+    });
+    var send = document.createElement("button");
+    send.type = "button";
+    send.textContent = "Reply";
+    send.style.cssText =
+      "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+    stylePrimaryButton(send);
+    send.addEventListener("click", function () {
+      var t = ta.value.trim();
+      if (!t) return;
+      cmtState.replyCount++;
+      queueWrite("comment_replies", {
+        pid: PID,
+        session_type: SESSION_TYPE,
+        item_id: currentItem.id,
+        comment_id: commentId,
+        body: t,
+        reply_index: cmtState.replyCount,
+      });
+      renderCommentReply(
+        container,
+        { index: cmtState.replyCount, text: t },
+        cmtState,
+        commentId,
+      );
+      box.remove();
+    });
+    box.appendChild(ta);
+    box.appendChild(send);
+    body.appendChild(box);
+    animateReplyBox(box);
+    addDismissOnOutside(box, ta, function () {
+      box.remove();
+    });
+    ta.focus();
+  });
+
+  editBtn.addEventListener("click", function () {
+    if (editing) return;
+    editing = true;
+    var editBox = document.createElement("div");
+    editBox.style.cssText =
+      "margin:2px 0 4px; display:flex; gap:6px; align-items:flex-start;";
+    var ta = document.createElement("textarea");
+    ta.value = replyObj.text;
+    ta.rows = 1;
+    ta.style.cssText =
+      "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:6px 8px; font-size:13px; font-family:inherit; resize:none; min-height:32px; box-sizing:border-box; overflow:hidden;";
+    ta.addEventListener("input", function () {
+      ta.style.height = "auto";
+      ta.style.height = ta.scrollHeight + "px";
+    });
+    var save = document.createElement("button");
+    save.type = "button";
+    save.textContent = "Save";
+    save.style.cssText =
+      "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+    save.addEventListener("click", function () {
+      var t = ta.value.trim();
+      if (!t) return;
+      queueWrite("comment_reply_interactions", {
+        pid: PID,
+        session_type: SESSION_TYPE,
+        item_id: currentItem.id,
+        comment_id: commentId,
+        reply_index: replyObj.index,
+        action_type: "edit",
+        value: t,
+      });
+      replyObj.text = t;
+      textEl.textContent = t;
+      body.replaceChild(textEl, editBox);
+      editing = false;
+    });
+    editBox.appendChild(ta);
+    editBox.appendChild(save);
+    body.replaceChild(editBox, textEl);
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
+    ta.focus();
+  });
+
+  deleteBtn.addEventListener("click", function () {
+    queueWrite("comment_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      comment_id: commentId,
+      reply_index: replyObj.index,
+      action_type: "delete",
+    });
+    wrap.remove();
+  });
+
+  actions.appendChild(likeBtn);
+  actions.appendChild(dislikeBtn);
+  actions.appendChild(replyBtn);
+  actions.appendChild(repostBtn);
+  // Edit and Delete sit at the end of the header row, so the action row
+  // below stays at four icons like posts and other comments.
+  var ownTools = document.createElement('div');
+  ownTools.style.cssText =
+    'position:absolute; top:6px; right:4px; display:flex; gap:2px;';
+  header.style.paddingRight = '88px';
+  editBtn.style.margin = '0';
+  deleteBtn.style.margin = '0';
+  ownTools.appendChild(editBtn);
+  ownTools.appendChild(deleteBtn);
+  body.appendChild(header);
+  body.appendChild(textEl);
+  topRow.appendChild(avatar);
+  topRow.appendChild(body);
+  wrap.appendChild(ownTools);
+  wrap.appendChild(topRow);
+  wrap.appendChild(actions);
+  container.appendChild(wrap);
+  return wrap;
+}
+
+function renderPostReply(container, replyObj, atTop) {
+  var editing = false;
+  var liked = false,
+    disliked = false,
+    reposted = false;
+
+  var wrap = document.createElement("div");
+  wrap.style.cssText = "padding:18px 16px 14px; border-top:1px solid #eff3f4; position:relative;";
+
+  var topRow = document.createElement("div");
+  topRow.style.cssText = "display:flex; gap:10px;";
+
+  var avatar = document.createElement("div");
+  avatar.style.cssText =
+    "flex:0 0 36px; height:36px; border-radius:50%; background:#cfd9de; display:flex; align-items:center; justify-content:center; font-size:14px; color:#536471; font-weight:700; flex-shrink:0;";
+  avatar.textContent = "Y";
+
+  var body = document.createElement("div");
+  body.style.cssText = "flex:1; min-width:0;";
+
+  var header = document.createElement("div");
+  header.style.cssText = "font-size:14px;";
+  header.innerHTML =
+    '<span style="font-weight:700; color:#0f1419;">You</span> <span style="color:#536471;">@you</span>';
+
+  var textEl = document.createElement("div");
+  textEl.style.cssText =
+    "font-size:14px; color:#0f1419; margin:3px 0 0; word-wrap:break-word;";
+  textEl.textContent = replyObj.text;
+
+  var actions = document.createElement("div");
+  actions.style.cssText =
+    "display:flex; justify-content:space-around; align-items:center; color:#536471; font-size:13px; padding:8px 0 2px;";
+
+  var likeBtn = mkAction(SVG_LIKE);
+  var dislikeBtn = mkAction(SVG_DISLIKE);
+  var replyBtn = mkAction(SVG_REPLY);
+  var repostBtn = mkAction(SVG_REPOST);
+  var editBtn = mkActionText("Edit");
+  var deleteBtn = mkActionText("Delete");
+
+  likeBtn.addEventListener("click", function () {
+    liked = !liked;
+    if (liked && disliked) {
+      disliked = false;
+      dislikeBtn.style.color = "#536471";
+      dislikeBtn.querySelector("svg").outerHTML = SVG_DISLIKE;
+    }
+    likeBtn.style.color = liked ? "#DC267F" : "#536471";
+    likeBtn.querySelector("svg").outerHTML = liked ? SVG_LIKE_ON : SVG_LIKE;
+    queueWrite("post_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      reply_index: replyObj.index,
+      action_type: liked ? "like" : "unlike",
+    });
+  });
+
+  dislikeBtn.addEventListener("click", function () {
+    disliked = !disliked;
+    if (disliked && liked) {
+      liked = false;
+      likeBtn.style.color = "#536471";
+      likeBtn.querySelector("svg").outerHTML = SVG_LIKE;
+    }
+    dislikeBtn.style.color = disliked ? "#785EF0" : "#536471";
+    dislikeBtn.querySelector("svg").outerHTML = disliked
+      ? SVG_DISLIKE_ON
+      : SVG_DISLIKE;
+    queueWrite("post_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      reply_index: replyObj.index,
+      action_type: disliked ? "dislike" : "undislike",
+    });
+  });
+
+  repostBtn.addEventListener("click", function () {
+    reposted = !reposted;
+    repostBtn.style.color = reposted ? "#648FFF" : "#536471";
+    repostBtn.querySelector("svg").outerHTML = reposted
+      ? SVG_REPOST_ON
+      : SVG_REPOST;
+    queueWrite("post_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      reply_index: replyObj.index,
+      action_type: reposted ? "repost" : "unrepost",
+    });
+  });
+
+  replyBtn.addEventListener("click", function () {
+    if (body.querySelector(".reply-box-nested")) {
+      body.querySelector(".reply-box-nested textarea").focus();
+      return;
+    }
+    var box = document.createElement("div");
+    box.className = "reply-box-nested";
+    box.style.cssText =
+      "margin-top:8px; display:flex; gap:6px; align-items:flex-start;";
+    var ta = document.createElement("textarea");
+    ta.placeholder = "Post your reply";
+    ta.rows = 1;
+    ta.style.cssText =
+      "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:8px; font-size:14px; font-family:inherit; resize:none; min-height:70px; box-sizing:border-box; overflow:hidden;";
+    styleTextarea(ta);
+    ta.addEventListener("focus", function () {
+      ta.style.minHeight = "70px";
+    });
+    ta.addEventListener("input", function () {
+      ta.style.height = "auto";
+      ta.style.height = ta.scrollHeight + "px";
+    });
+    var send = document.createElement("button");
+    send.type = "button";
+    send.textContent = "Reply";
+    send.style.cssText =
+      "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+    stylePrimaryButton(send);
+    send.addEventListener("click", function () {
+      var t = ta.value.trim();
+      if (!t) return;
+      postReplyCount++;
+      queueWrite("post_replies", {
+        pid: PID,
+        session_type: SESSION_TYPE,
+        item_id: currentItem.id,
+        body: t,
+        reply_index: postReplyCount,
+      });
+      renderPostSubReply(subThread, { index: postReplyCount, text: t });
+      box.remove();
+    });
+    box.appendChild(ta);
+    box.appendChild(send);
+    body.appendChild(box);
+    animateReplyBox(box);
+    addDismissOnOutside(box, ta, function () {
+      box.remove();
+    });
+    ta.focus();
+  });
+
+  editBtn.addEventListener("click", function () {
+    if (editing) return;
+    editing = true;
+    var editBox = document.createElement("div");
+    editBox.style.cssText =
+      "margin:2px 0 8px; display:flex; gap:6px; align-items:flex-start;";
+    var ta = document.createElement("textarea");
+    ta.value = replyObj.text;
+    ta.rows = 1;
+    ta.style.cssText =
+      "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:8px; font-size:14px; font-family:inherit; resize:none; min-height:38px; box-sizing:border-box; overflow:hidden;";
+    ta.addEventListener("input", function () {
+      ta.style.height = "auto";
+      ta.style.height = ta.scrollHeight + "px";
+    });
+    var save = document.createElement("button");
+    save.type = "button";
+    save.textContent = "Save";
+    save.style.cssText =
+      "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+    save.addEventListener("click", function () {
+      var t = ta.value.trim();
+      if (!t) return;
+      queueWrite("post_reply_interactions", {
+        pid: PID,
+        session_type: SESSION_TYPE,
+        item_id: currentItem.id,
+        reply_index: replyObj.index,
+        action_type: "edit",
+        value: t,
+      });
+      replyObj.text = t;
+      textEl.textContent = t;
+      body.replaceChild(textEl, editBox);
+      editing = false;
+    });
+    editBox.appendChild(ta);
+    editBox.appendChild(save);
+    body.replaceChild(editBox, textEl);
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
+    ta.focus();
+  });
+
+  deleteBtn.addEventListener("click", function () {
+    queueWrite("post_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      reply_index: replyObj.index,
+      action_type: "delete",
+    });
+    wrap.remove();
+  });
+
+  var subThread = document.createElement("div");
+
+  actions.appendChild(likeBtn);
+  actions.appendChild(dislikeBtn);
+  actions.appendChild(replyBtn);
+  actions.appendChild(repostBtn);
+  // Edit and Delete sit at the end of the header row, so the action row
+  // below stays at four icons like posts and other comments.
+  var ownTools = document.createElement('div');
+  ownTools.style.cssText =
+    'position:absolute; top:6px; right:4px; display:flex; gap:2px;';
+  header.style.paddingRight = '88px';
+  editBtn.style.margin = '0';
+  deleteBtn.style.margin = '0';
+  ownTools.appendChild(editBtn);
+  ownTools.appendChild(deleteBtn);
+  body.appendChild(header);
+  body.appendChild(textEl);
+  topRow.appendChild(avatar);
+  topRow.appendChild(body);
+  wrap.appendChild(ownTools);
+  wrap.appendChild(topRow);
+  wrap.appendChild(actions);
+  subThread.style.cssText = "padding-left: 46px;";
+  wrap.appendChild(subThread);
+  if (atTop && container.firstChild)
+    container.insertBefore(wrap, container.firstChild);
+  else container.appendChild(wrap);
+  return wrap;
+}
+
+function renderPostSubReply(container, replyObj) {
+  var editing = false;
+  var liked = false,
+    disliked = false,
+    reposted = false;
+
+  var wrap = document.createElement("div");
+  wrap.style.cssText =
+    "margin-top:14px; padding:10px 0 0 12px; border-left:2px solid #eff3f4; position:relative;";
+
+  var topRow = document.createElement("div");
+  topRow.style.cssText = "display:flex; gap:8px;";
+
+  var avatar = document.createElement("div");
+  avatar.style.cssText =
+    "flex:0 0 28px; height:28px; border-radius:50%; background:#cfd9de; display:flex; align-items:center; justify-content:center; font-size:12px; color:#536471; font-weight:700; flex-shrink:0;";
+  avatar.textContent = "Y";
+
+  var body = document.createElement("div");
+  body.style.cssText = "flex:1; min-width:0;";
+
+  var header = document.createElement("div");
+  header.style.cssText = "font-size:13px;";
+  header.innerHTML =
+    '<span style="font-weight:700; color:#0f1419;">You</span> <span style="color:#536471;">@you</span>';
+
+  var textEl = document.createElement("div");
+  textEl.style.cssText =
+    "font-size:13px; color:#0f1419; margin:3px 0 0; word-wrap:break-word;";
+  textEl.textContent = replyObj.text;
+
+  var actions = document.createElement("div");
+  actions.style.cssText =
+    "display:flex; justify-content:space-around; align-items:center; color:#536471; font-size:13px; padding:7px 0 2px;";
+
+  var likeBtn = mkAction(SVG_LIKE);
+  var dislikeBtn = mkAction(SVG_DISLIKE);
+  var replyBtn = mkAction(SVG_REPLY);
+  var repostBtn = mkAction(SVG_REPOST);
+  var editBtn = mkActionText("Edit");
+  var deleteBtn = mkActionText("Delete");
+
+  likeBtn.addEventListener("click", function () {
+    liked = !liked;
+    if (liked && disliked) {
+      disliked = false;
+      dislikeBtn.style.color = "#536471";
+      dislikeBtn.querySelector("svg").outerHTML = SVG_DISLIKE;
+    }
+    likeBtn.style.color = liked ? "#DC267F" : "#536471";
+    likeBtn.querySelector("svg").outerHTML = liked ? SVG_LIKE_ON : SVG_LIKE;
+    queueWrite("post_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      reply_index: replyObj.index,
+      action_type: liked ? "like" : "unlike",
+    });
+  });
+
+  dislikeBtn.addEventListener("click", function () {
+    disliked = !disliked;
+    if (disliked && liked) {
+      liked = false;
+      likeBtn.style.color = "#536471";
+      likeBtn.querySelector("svg").outerHTML = SVG_LIKE;
+    }
+    dislikeBtn.style.color = disliked ? "#785EF0" : "#536471";
+    dislikeBtn.querySelector("svg").outerHTML = disliked
+      ? SVG_DISLIKE_ON
+      : SVG_DISLIKE;
+    queueWrite("post_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      reply_index: replyObj.index,
+      action_type: disliked ? "dislike" : "undislike",
+    });
+  });
+
+  repostBtn.addEventListener("click", function () {
+    reposted = !reposted;
+    repostBtn.style.color = reposted ? "#648FFF" : "#536471";
+    repostBtn.querySelector("svg").outerHTML = reposted
+      ? SVG_REPOST_ON
+      : SVG_REPOST;
+    queueWrite("post_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      reply_index: replyObj.index,
+      action_type: reposted ? "repost" : "unrepost",
+    });
+  });
+
+  replyBtn.addEventListener("click", function () {
+    if (body.querySelector(".reply-box-nested")) {
+      body.querySelector(".reply-box-nested textarea").focus();
+      return;
+    }
+    var box = document.createElement("div");
+    box.className = "reply-box-nested";
+    box.style.cssText =
+      "margin-top:6px; display:flex; gap:6px; align-items:flex-start;";
+    var ta = document.createElement("textarea");
+    ta.placeholder = "Post your reply";
+    ta.rows = 1;
+    ta.style.cssText =
+      "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:6px 8px; font-size:13px; font-family:inherit; resize:none; min-height:60px; box-sizing:border-box; overflow:hidden;";
+    styleTextarea(ta);
+    ta.addEventListener("input", function () {
+      ta.style.height = "auto";
+      ta.style.height = ta.scrollHeight + "px";
+    });
+    var send = document.createElement("button");
+    send.type = "button";
+    send.textContent = "Reply";
+    send.style.cssText =
+      "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+    stylePrimaryButton(send);
+    send.addEventListener("click", function () {
+      var t = ta.value.trim();
+      if (!t) return;
+      postReplyCount++;
+      queueWrite("post_replies", {
+        pid: PID,
+        session_type: SESSION_TYPE,
+        item_id: currentItem.id,
+        body: t,
+        reply_index: postReplyCount,
+      });
+      renderPostSubReply(container, { index: postReplyCount, text: t });
+      box.remove();
+    });
+    box.appendChild(ta);
+    box.appendChild(send);
+    body.appendChild(box);
+    animateReplyBox(box);
+    addDismissOnOutside(box, ta, function () {
+      box.remove();
+    });
+    ta.focus();
+  });
+
+  editBtn.addEventListener("click", function () {
+    if (editing) return;
+    editing = true;
+    var editBox = document.createElement("div");
+    editBox.style.cssText =
+      "margin:2px 0 4px; display:flex; gap:6px; align-items:flex-start;";
+    var ta = document.createElement("textarea");
+    ta.value = replyObj.text;
+    ta.rows = 1;
+    ta.style.cssText =
+      "flex:1; border:1px solid #cfd9de; border-radius:8px; padding:6px 8px; font-size:13px; font-family:inherit; resize:none; min-height:32px; box-sizing:border-box; overflow:hidden;";
+    ta.addEventListener("input", function () {
+      ta.style.height = "auto";
+      ta.style.height = ta.scrollHeight + "px";
+    });
+    var save = document.createElement("button");
+    save.type = "button";
+    save.textContent = "Save";
+    save.style.cssText =
+      "background:#0f1419; color:#fff; border:none; border-radius:18px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;";
+    save.addEventListener("click", function () {
+      var t = ta.value.trim();
+      if (!t) return;
+      queueWrite("post_reply_interactions", {
+        pid: PID,
+        session_type: SESSION_TYPE,
+        item_id: currentItem.id,
+        reply_index: replyObj.index,
+        action_type: "edit",
+        value: t,
+      });
+      replyObj.text = t;
+      textEl.textContent = t;
+      body.replaceChild(textEl, editBox);
+      editing = false;
+    });
+    editBox.appendChild(ta);
+    editBox.appendChild(save);
+    body.replaceChild(editBox, textEl);
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
+    ta.focus();
+  });
+
+  deleteBtn.addEventListener("click", function () {
+    queueWrite("post_reply_interactions", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      reply_index: replyObj.index,
+      action_type: "delete",
+    });
+    wrap.remove();
+  });
+
+  actions.appendChild(likeBtn);
+  actions.appendChild(dislikeBtn);
+  actions.appendChild(replyBtn);
+  actions.appendChild(repostBtn);
+  // Edit and Delete sit at the end of the header row, so the action row
+  // below stays at four icons like posts and other comments.
+  var ownTools = document.createElement('div');
+  ownTools.style.cssText =
+    'position:absolute; top:6px; right:4px; display:flex; gap:2px;';
+  header.style.paddingRight = '88px';
+  editBtn.style.margin = '0';
+  deleteBtn.style.margin = '0';
+  ownTools.appendChild(editBtn);
+  ownTools.appendChild(deleteBtn);
+  body.appendChild(header);
+  body.appendChild(textEl);
+  topRow.appendChild(avatar);
+  topRow.appendChild(body);
+  wrap.appendChild(ownTools);
+  wrap.appendChild(topRow);
+  wrap.appendChild(actions);
+  container.appendChild(wrap);
+  return wrap;
+}
+
+function recoPreview(item) {
+  if (!item.transcript) return "";
+  var text;
+  try {
+    var paras = JSON.parse(item.transcript);
+    text = Array.isArray(paras) ? paras.join(" ") : String(paras);
+  } catch (e) {
+    text = item.transcript;
+  }
+  var words = text.trim().split(/\s+/);
+  return words.length > 30 ? words.slice(0, 30).join(" ") + "…" : text;
+}
+
+// Ranks item_id_b values by similarity to itemId, restricted to eligibleIds.
+// allSimilarities must already be ordered by (item_id_a, cosine_similarity desc)
+// at fetch time, so no client-side sort is needed here.
+function rankedSimilar(allSimilarities, itemId, eligibleIds) {
+  return allSimilarities
+    .filter(function (r) {
+      return r.item_id_a === itemId && eligibleIds.has(r.item_id_b);
+    })
+    .map(function (r) {
+      return r.item_id_b;
+    });
+}
+
+// ---- STANCE-ADAPTIVE RECOMMENDATION LISTS ----
+// Stance of an item as a sign: pro-immigration +1, anti-immigration -1.
+function stanceSign(item) {
+  return item.stance === "pro_immigration" ? 1 : -1;
+}
+
+// Top-n items of one stance from pool, ranked by similarity to anchorId.
+function topByStance(anchorId, pool, sign, n) {
+  var byId = {};
+  pool.forEach(function (i) {
+    if (stanceSign(i) === sign) byId[i.id] = i;
+  });
+  return rankedSimilar(allSimilarities, anchorId, new Set(Object.keys(byId)))
+    .slice(0, n)
+    .map(function (id) {
+      return byId[id];
+    });
+}
+
+// Builds the sidebar list. Each slot draws its own theta ~ Beta dist and
+// takes a pro post when theta < 0.5, filling from the most similar unused
+// post of that stance. The drawn portion is then reordered so an aligned post
+// leads (aligned = the side with more evidence), leaving the composition
+// itself untouched. Pinned phase-1 clicks lead and consume slots.
+function buildRecoList(alpha, beta, anchorId, pool, pinned) {
+  var total = RECO_COUNT;
+  var items = (pinned || []).slice(0, total);
+  var drawnStart = items.length;
+  var used = new Set(
+    items.map(function (i) {
+      return i.id;
+    }),
+  );
+
+  var byId = {};
+  pool.forEach(function (i) {
+    byId[i.id] = i;
+  });
+
+  // candidates per stance, most similar to the current post first
+  var proQueue = [];
+  var antiQueue = [];
+  rankedSimilar(allSimilarities, anchorId, new Set(Object.keys(byId))).forEach(
+    function (id) {
+      if (used.has(id)) return;
+      (stanceSign(byId[id]) > 0 ? proQueue : antiQueue).push(byId[id]);
+    },
+  );
+
+  var draws = [];
+  while (items.length < total) {
+    var theta = randBeta(alpha, beta);
+    var wantPro = theta < 0.5;
+    draws.push({ theta: round4(theta), stance: wantPro ? "pro" : "anti" });
+    var pick = wantPro ? proQueue.shift() : antiQueue.shift();
+    if (!pick) pick = wantPro ? antiQueue.shift() : proQueue.shift();
+    if (!pick) break; // pool exhausted
+    items.push(pick);
+  }
+
+  // mean < 0.5 is the same test as alpha < beta, coin flip when tied
+  var alignedPro = alpha === beta ? Math.random() < 0.5 : alpha < beta;
+  for (var i = drawnStart; i < items.length; i++) {
+    if (stanceSign(items[i]) > 0 === alignedPro) {
+      items.splice(drawnStart, 0, items.splice(i, 1)[0]);
+      break;
+    }
+  }
+
+  return {
+    items: items,
+    meta: {
+      alpha: round4(alpha),
+      beta: round4(beta),
+      mean: round4(betaMean(alpha, beta)),
+      sd: round4(betaSD(alpha, beta)),
+      alignedStance: alignedPro ? "pro" : "anti",
+      draws: draws,
+      items: items.map(function (i) {
+        return { id: i.id, stance: i.stance };
+      }),
+    },
+  };
+}
+
+// ---- POST BAR ----
+function wirePostBar() {
+  ["like", "dislike", "reply", "repost", "report"].forEach(function (name) {
+    var btn = document.getElementById("btn-" + name);
+    if (!btn) return;
+    addButtonFeedback(btn);
+  });
+  styleTextarea(document.getElementById("post-reply-input"));
+  stylePrimaryButton(document.getElementById("post-reply-send"));
+}
+
+// ---- POST REACTIONS ----
+// Like and dislike are mutually exclusive: switching one off is written as its
+// own event so both the interaction log and the stance model stay consistent.
+function paintReaction(name, on, iconOn, iconOff, color, labelOn, labelOff) {
+  var btn = document.getElementById("btn-" + name);
+  if (!btn) return;
+  btn.style.color = on ? color : "#536471";
+  btn.querySelector("svg").outerHTML = on ? iconOn : iconOff;
+  var label = document.getElementById(name + "-label");
+  if (label) label.textContent = on ? labelOn : labelOff;
+}
+
+function paintLike() {
+  paintReaction(
+    "like", postLiked, SVG_LIKE_ON, SVG_LIKE, "#DC267F", "Liked", "Like",
+  );
+}
+
+function paintDislike() {
+  paintReaction(
+    "dislike", postDisliked, SVG_DISLIKE_ON, SVG_DISLIKE, "#785EF0",
+    "Disliked", "Dislike",
+  );
+}
+
+function handlePostLike() {
+  postLiked = !postLiked;
+  if (postLiked && postDisliked) {
+    postDisliked = false;
+    paintDislike();
+    queueWrite("post_dislikes", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      disliked: false,
+    });
+  }
+  paintLike();
+  queueWrite("post_likes", {
+    pid: PID,
+    session_type: SESSION_TYPE,
+    item_id: currentItem.id,
+    liked: postLiked,
+  });
+}
+
+function handlePostDislike() {
+  postDisliked = !postDisliked;
+  if (postDisliked && postLiked) {
+    postLiked = false;
+    paintLike();
+    queueWrite("post_likes", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      liked: false,
+    });
+  }
+  paintDislike();
+  queueWrite("post_dislikes", {
+    pid: PID,
+    session_type: SESSION_TYPE,
+    item_id: currentItem.id,
+    disliked: postDisliked,
+  });
+}
+
+function handlePostRepost() {
+  postReposted = !postReposted;
+  document.getElementById("btn-repost").style.color = postReposted
+    ? "#648FFF"
+    : "#536471";
+  document.getElementById("btn-repost").querySelector("svg").outerHTML =
+    postReposted ? SVG_REPOST_ON : SVG_REPOST;
+  document.getElementById("repost-label").textContent = postReposted
+    ? "Reposted"
+    : "Repost";
+  queueWrite("post_reposts", {
+    pid: PID,
+    session_type: SESSION_TYPE,
+    item_id: currentItem.id,
+    reposted: postReposted,
+  });
+}
+
+function handlePostReply() {
+  var ta = document.getElementById("post-reply-input");
+  var send = document.getElementById("post-reply-send");
+  var text = ta.value.trim();
+  if (!text) return;
+  postReplyCount++;
+  var replyObj = { index: postReplyCount, text: text };
+  queueWrite("post_replies", {
+    pid: PID,
+    session_type: SESSION_TYPE,
+    item_id: currentItem.id,
+    body: text,
+    reply_index: postReplyCount,
+  });
+  renderPostReply(document.getElementById("comment-list"), replyObj, true);
+  ta.value = "";
+  ta.style.height = "auto";
+  ta.style.minHeight = "38px";
+  send.style.display = "none";
+}
+
+// ---- REPORT MODAL ----
+function openReportModal() {
+  document.getElementById("report-body").style.display = "block";
+  document.getElementById("report-thanks").style.display = "none";
+  var list = document.getElementById("report-reasons");
+  list.innerHTML = "";
+  REPORT_REASONS.forEach(function (r) {
+    var btn = document.createElement("button");
+    btn.className = "report-reason-btn";
+    btn.innerHTML =
+      "<span>" +
+      esc(r.label) +
+      '</span><span style="color:#536471;">&rsaquo;</span>';
+    btn.addEventListener("click", function () {
+      if (reportTarget.type === "post") {
+        queueWrite("post_reports", {
+          pid: PID,
+          session_type: SESSION_TYPE,
+          item_id: currentItem.id,
+          reason: r.id,
+        });
+      } else {
+        queueWrite("comment_reports", {
+          pid: PID,
+          session_type: SESSION_TYPE,
+          item_id: currentItem.id,
+          comment_id: reportTarget.commentId,
+          reason: r.id,
+        });
+      }
+      if (reportTarget.btn) {
+        reportTarget.btn.style.color = "#FFB000";
+        reportTarget.btn.querySelector("svg").outerHTML = SVG_REPORT_ON;
+      }
+      if (reportTarget.type === "post") {
+        var reportLabel = document.getElementById("report-label");
+        if (reportLabel) reportLabel.textContent = "Reported";
+      }
+      document.getElementById("report-body").style.display = "none";
+      document.getElementById("report-thanks").style.display = "block";
+      setTimeout(closeReportModal, 1400);
+    });
+    list.appendChild(btn);
+  });
+  document.getElementById("report-modal").classList.add("open");
+}
+
+function closeReportModal() {
+  document.getElementById("report-modal").classList.remove("open");
+  reportTarget = null;
+}
+
+// ---- CONTINUE TIMER ----
+// handleContinue() is defined by each page script.
+function startContinueTimer() {
+  setTimeout(handleContinue, CONTINUE_DELAY_MS);
+}
+
+// ---- UTILS ----
+function esc(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function linkifyHashtags(text) {
+  return String(text || "")
+    .split(/(#\w+)/g)
+    .map(function (part) {
+      return /^#\w+$/.test(part)
+        ? '<span style="color:#536471;">' + esc(part) + "</span>"
+        : esc(part);
+    })
+    .join("");
+}
+function youtubeId(url) {
+  var m = String(url).match(
+    /(?:youtu\.be\/|[?&]v=|embed\/)([A-Za-z0-9_-]{11})/,
+  );
+  return m ? m[1] : null;
+}
+function shuffle(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
+}
+function showError(msg) {
+  document.getElementById("loading").style.display = "none";
+  var el = document.getElementById("error-msg");
+  el.textContent = msg;
+  el.style.display = "flex";
+}
+
+// ---- STATIC EVENT LISTENERS ----
+document.getElementById("view-more-btn").addEventListener("click", function () {
+  if (!currentItem) return;
+  expansionIdx++;
+  visibleCount = Math.min(visibleCount + COMMENTS_PER_LOAD, allComments.length);
+  queueWrite("comment_expansions", {
+    pid: PID,
+    session_type: SESSION_TYPE,
+    item_id: currentItem.id,
+    expansion_index: expansionIdx,
+    comments_visible: visibleCount,
+  });
+  renderComments();
+});
+
+document.getElementById("btn-like").addEventListener("click", handlePostLike);
+var dislikeBtn = document.getElementById("btn-dislike");
+if (dislikeBtn) dislikeBtn.addEventListener("click", handlePostDislike);
+document
+  .getElementById("btn-repost")
+  .addEventListener("click", handlePostRepost);
+document.getElementById("btn-report").addEventListener("click", function () {
+  reportTarget = {
+    type: "post",
+    commentId: null,
+    btn: document.getElementById("btn-report"),
+  };
+  openReportModal();
+});
+document.getElementById("btn-reply").addEventListener("click", function () {
+  var ta = document.getElementById("post-reply-input");
+  var send = document.getElementById("post-reply-send");
+  ta.focus();
+  ta.style.minHeight = "70px";
+  send.style.display = "inline-block";
+});
+
+var postTa = document.getElementById("post-reply-input");
+var postSend = document.getElementById("post-reply-send");
+postTa.addEventListener("input", function () {
+  postSend.style.display = postTa.value.trim() ? "inline-block" : "none";
+  postTa.style.height = "auto";
+  postTa.style.height = postTa.scrollHeight + "px";
+});
+postSend.addEventListener("click", handlePostReply);
+
+document
+  .getElementById("report-close")
+  .addEventListener("click", closeReportModal);
+document.getElementById("report-modal").addEventListener("click", function (e) {
+  if (e.target.id === "report-modal") closeReportModal();
+});
