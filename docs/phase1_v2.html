@@ -988,7 +988,6 @@
         mDir = 1;
         renderPage();
         postHeight();
-        placeMeasuresBox();
       }
 
       function pageComplete(p) {
@@ -1072,6 +1071,7 @@
         var modal = document.getElementById("measures-modal");
         if (modal.classList.contains("open")) return; // already answering
         modal.classList.add("open");
+        measuresOpen = true;
         window.parent.postMessage({ type: "measures_open" }, "*");
         showPage(0);
         logEvent("measures_opened");
@@ -1100,7 +1100,6 @@
       function closeRecoModal() {
         document.getElementById("reco-modal").classList.remove("open");
       }
-
 
       window.addEventListener("message", function (e) {
         if (e.data && e.data.type === "open_measures") {
@@ -1133,21 +1132,14 @@
         return 600; // loading or error state
       }
 
+      var measuresOpen = false;
+
       function postHeight() {
+        if (measuresOpen) return; // parent pins the frame to the window
         var h = contentHeight();
         if (Math.abs(h - lastSentHeight) < 4) return; // damp resize feedback
         lastSentHeight = h;
         window.parent.postMessage({ type: "iframe_height", height: h }, "*");
-      }
-
-      function placeMeasuresBox() {
-        var ov = document.getElementById("measures-modal");
-        if (!ov || !ov.classList.contains("open") || !viewHeight) return;
-        var box = ov.querySelector(".measures-box");
-        ov.style.alignItems = "flex-start";
-        box.style.maxHeight = viewHeight - 32 + "px";
-        var gap = Math.max(16, (viewHeight - box.offsetHeight) / 2);
-        box.style.marginTop = viewTop + gap + "px";
       }
 
       function placeModals() {
@@ -1170,7 +1162,6 @@
           viewTop = d.top || 0;
           viewHeight = d.height || 0;
           placeModals();
-          placeMeasuresBox();
         }
       });
 
