@@ -990,6 +990,7 @@
         mDir = 1;
         renderPage();
         postHeight();
+        placeMeasuresBox();
       }
 
       function pageComplete(p) {
@@ -1069,20 +1070,10 @@
         }
       }
 
-      // The feed scrolls in the Qualtrics parent, not in this iframe, so the
-      // parent has to co-operate; the local styles only matter when this page
-      // is opened standalone.
-      function lockScroll(on) {
-        document.documentElement.style.overflow = on ? "hidden" : "";
-        document.body.style.overflow = on ? "hidden" : "";
-        window.parent.postMessage({ type: "lock_scroll", lock: on }, "*");
-      }
-
       function openMeasures() {
         var modal = document.getElementById("measures-modal");
         if (modal.classList.contains("open")) return; // already answering
         modal.classList.add("open");
-        lockScroll(true);
         showPage(0);
         logEvent("measures_opened");
       }
@@ -1153,10 +1144,21 @@
         window.parent.postMessage({ type: "iframe_height", height: h }, "*");
       }
 
+      function placeMeasuresBox() {
+        var ov = document.getElementById("measures-modal");
+        if (!ov || !ov.classList.contains("open") || !viewHeight) return;
+        var box = ov.querySelector(".measures-box");
+        ov.style.alignItems = "flex-start";
+        box.style.maxHeight = viewHeight - 32 + "px";
+        var gap = Math.max(16, (viewHeight - box.offsetHeight) / 2);
+        box.style.marginTop = viewTop + gap + "px";
+      }
+
       function placeModals() {
         if (!viewHeight) return;
         var m = document.querySelectorAll(".modal-overlay");
         for (var i = 0; i < m.length; i++) {
+          if (m[i].id === "measures-modal") continue; // stays full-frame
           m[i].style.position = "absolute";
           m[i].style.left = "0";
           m[i].style.right = "0";
@@ -1172,6 +1174,7 @@
           viewTop = d.top || 0;
           viewHeight = d.height || 0;
           placeModals();
+          placeMeasuresBox();
         }
       });
 
