@@ -555,6 +555,7 @@
 
         wirePostBar();
         render();
+        logEvent("interface_ready", String(Date.now() - PAGE_T0));
         startContinueTimer();
         sendState();
       }

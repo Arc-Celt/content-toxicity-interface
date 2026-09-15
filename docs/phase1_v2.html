@@ -237,7 +237,6 @@
     <script src="app_v2.js"></script>
     <script>
       var SESSION_TYPE = "phase1";
-      var CONTINUE_DELAY_MS = 45 * 1000;
 
       // ---- INTERACTION LOG ----
       var p1PostReplies = []; // {idx, text, deleted}
@@ -479,7 +478,7 @@
         wirePostBar();
         buildMeasures();
         render();
-        startContinueTimer();
+        logEvent("interface_ready", String(Date.now() - PAGE_T0));
         sendState();
       }
 
@@ -1103,9 +1102,6 @@
         document.getElementById("reco-modal").classList.remove("open");
       }
 
-      // The timer no longer ends the phase. Exit is participant-driven now, so
-      // the parent's Continue button is the only path besides a reco click.
-      function handleContinue() {}
 
       window.addEventListener("message", function (e) {
         if (e.data && e.data.type === "open_measures") {

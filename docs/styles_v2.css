@@ -392,13 +392,23 @@ body {
 }
 
 /* ===== MID-SESSION MEASURES MODAL =====
-   Sits outside #app so it does not inflate the iframe height report, and
-   carries .modal-overlay so placeModals() centres it in the parent viewport.
-   Deliberately opaque and near-full-bleed: the post is behind it and the
-   comprehension item must be answered from memory. */
+   Sits outside #app so it does not inflate the iframe height report, and keeps
+   the inherited position:fixed / inset:0 so it covers the feed at any scroll
+   offset; placeMeasuresBox() moves the box, not the backdrop.
+
+   The feed is blurred rather than blacked out. The fallback is a near-opaque
+   scrim: where backdrop-filter is unsupported the post has to be hidden some
+   other way, or the comprehension item is answerable by reading through it. */
 .measures-overlay {
-  background: rgba(15, 20, 25, 0.975);
+  background: rgba(15, 20, 25, 0.9);
   padding: 16px;
+}
+@supports ((backdrop-filter: blur(9px)) or (-webkit-backdrop-filter: blur(9px))) {
+  .measures-overlay {
+    background: rgba(15, 20, 25, 0.22);
+    -webkit-backdrop-filter: blur(9px);
+    backdrop-filter: blur(9px);
+  }
 }
 .measures-box {
   max-width: 820px;

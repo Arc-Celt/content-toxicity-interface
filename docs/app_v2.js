@@ -152,6 +152,9 @@ var continueFired = false;
 // ---- INTERACTION TRACKING ----
 // Every interaction funnels through queueWrite, so it is the one place that
 // needs to stamp the event log. ISO strings match the navigationHistory format.
+// Wall clock at page-script start, so interface_ready can report how long
+// the load took and the moment of opening stays recoverable.
+var PAGE_T0 = Date.now();
 var eventLog = []; // [{t, action, item, detail}]
 
 function logEvent(action, detail) {
