@@ -1072,6 +1072,7 @@
         if (modal.classList.contains("open")) return; // already answering
         modal.classList.add("open");
         measuresOpen = true;
+        pauseMainVideo();
         window.parent.postMessage({ type: "measures_open" }, "*");
         showPage(0);
         logEvent("measures_opened");

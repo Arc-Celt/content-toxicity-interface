@@ -282,6 +282,12 @@ function render() {
 // queueWrite: they are not interactions the per-item logs model. The YouTube
 // branch is unreachable in this study (every item is an S3 mp4), so no
 // IFrame API is needed.
+function pauseMainVideo() {
+  var media = document.getElementById("stim-media");
+  var video = media && media.querySelector("video");
+  if (video && !video.paused) video.pause();
+}
+
 function wireVideoEvents(video) {
   if (!video) return;
   ["play", "pause", "ended"].forEach(function (evt) {
@@ -768,12 +774,12 @@ function renderCommentReply(container, replyObj, cmtState, commentId) {
   actions.appendChild(repostBtn);
   // Edit and Delete sit at the end of the header row, so the action row
   // below stays at four icons like posts and other comments.
-  var ownTools = document.createElement('div');
+  var ownTools = document.createElement("div");
   ownTools.style.cssText =
-    'position:absolute; top:6px; right:4px; display:flex; gap:2px;';
-  header.style.paddingRight = '88px';
-  editBtn.style.margin = '0';
-  deleteBtn.style.margin = '0';
+    "position:absolute; top:6px; right:4px; display:flex; gap:2px;";
+  header.style.paddingRight = "88px";
+  editBtn.style.margin = "0";
+  deleteBtn.style.margin = "0";
   ownTools.appendChild(editBtn);
   ownTools.appendChild(deleteBtn);
   body.appendChild(header);
@@ -794,7 +800,8 @@ function renderPostReply(container, replyObj, atTop) {
     reposted = false;
 
   var wrap = document.createElement("div");
-  wrap.style.cssText = "padding:18px 16px 14px; border-top:1px solid #eff3f4; position:relative;";
+  wrap.style.cssText =
+    "padding:18px 16px 14px; border-top:1px solid #eff3f4; position:relative;";
 
   var topRow = document.createElement("div");
   topRow.style.cssText = "display:flex; gap:10px;";
@@ -996,12 +1003,12 @@ function renderPostReply(container, replyObj, atTop) {
   actions.appendChild(repostBtn);
   // Edit and Delete sit at the end of the header row, so the action row
   // below stays at four icons like posts and other comments.
-  var ownTools = document.createElement('div');
+  var ownTools = document.createElement("div");
   ownTools.style.cssText =
-    'position:absolute; top:6px; right:4px; display:flex; gap:2px;';
-  header.style.paddingRight = '88px';
-  editBtn.style.margin = '0';
-  deleteBtn.style.margin = '0';
+    "position:absolute; top:6px; right:4px; display:flex; gap:2px;";
+  header.style.paddingRight = "88px";
+  editBtn.style.margin = "0";
+  deleteBtn.style.margin = "0";
   ownTools.appendChild(editBtn);
   ownTools.appendChild(deleteBtn);
   body.appendChild(header);
@@ -1224,12 +1231,12 @@ function renderPostSubReply(container, replyObj) {
   actions.appendChild(repostBtn);
   // Edit and Delete sit at the end of the header row, so the action row
   // below stays at four icons like posts and other comments.
-  var ownTools = document.createElement('div');
+  var ownTools = document.createElement("div");
   ownTools.style.cssText =
-    'position:absolute; top:6px; right:4px; display:flex; gap:2px;';
-  header.style.paddingRight = '88px';
-  editBtn.style.margin = '0';
-  deleteBtn.style.margin = '0';
+    "position:absolute; top:6px; right:4px; display:flex; gap:2px;";
+  header.style.paddingRight = "88px";
+  editBtn.style.margin = "0";
+  deleteBtn.style.margin = "0";
   ownTools.appendChild(editBtn);
   ownTools.appendChild(deleteBtn);
   body.appendChild(header);
@@ -1379,14 +1386,25 @@ function paintReaction(name, on, iconOn, iconOff, color, labelOn, labelOff) {
 
 function paintLike() {
   paintReaction(
-    "like", postLiked, SVG_LIKE_ON, SVG_LIKE, "#DC267F", "Liked", "Like",
+    "like",
+    postLiked,
+    SVG_LIKE_ON,
+    SVG_LIKE,
+    "#DC267F",
+    "Liked",
+    "Like",
   );
 }
 
 function paintDislike() {
   paintReaction(
-    "dislike", postDisliked, SVG_DISLIKE_ON, SVG_DISLIKE, "#785EF0",
-    "Disliked", "Dislike",
+    "dislike",
+    postDisliked,
+    SVG_DISLIKE_ON,
+    SVG_DISLIKE,
+    "#785EF0",
+    "Disliked",
+    "Dislike",
   );
 }
 
