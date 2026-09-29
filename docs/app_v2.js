@@ -6,10 +6,9 @@ var COMMENTS_PER_LOAD = 2;
 var RECO_COUNT = 4;
 
 var REPORT_REASONS = [
-  { id: "spam_misleading", label: "Spam or misleading" },
   { id: "hate_harassment", label: "Hate speech or harassment" },
-  { id: "abusive_language", label: "Abusive or harmful language" },
-  { id: "violent_content", label: "Threatening or violent content" },
+  { id: "violent_repulsive", label: "Violent or repulsive content" },
+  { id: "misinformation", label: "Misinformation" },
   { id: "other", label: "Other" },
 ];
 

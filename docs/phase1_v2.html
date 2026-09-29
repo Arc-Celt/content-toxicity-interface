@@ -580,21 +580,15 @@
           field: "comprehension_text",
         },
         {
-          kind: "carousel",
-          h1: "Tell us whether you agree or disagree",
+          kind: "choice",
+          h1: "Your thoughts on the post",
           q:
-            "Please indicate how much you agree or disagree with the " +
-            "following statement about the toxicity level of the post you " +
-            "viewed. To help answer this question, please refer to the " +
-            "following definitions:",
+            "How would you rate the toxicity level of the post you viewed? " +
+            "To help answer this question, please refer to the following " +
+            "definitions:",
           defs: TOX_DEFS,
-          labels: AGREE_LABELS,
-          items: [
-            {
-              field: "toxicity",
-              label: "The post content is toxic or very toxic.",
-            },
-          ],
+          field: "toxicity",
+          options: ["Very toxic", "Toxic", "Not toxic", "I'm not sure"],
         },
         {
           kind: "matrix",
@@ -860,6 +854,38 @@
         }
       }
 
+      // Single choice; stores the option text itself.
+      function renderChoice(host, p) {
+        var html =
+          '<div class="m-page active">' +
+          headingHtml(p) +
+          '<div class="m-q">' +
+          esc(p.q) +
+          "</div>";
+        if (p.defs) {
+          html +=
+            '<ul class="m-defs"><li>' + p.defs.join("</li><li>") + "</li></ul>";
+        }
+        host.innerHTML = html + '<div class="m-opts" id="m-opts"></div></div>';
+
+        var opts = document.getElementById("m-opts");
+        p.options.forEach(function (option) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "m-choice" + (measures[p.field] === option ? " sel" : "");
+          b.textContent = option;
+          b.addEventListener("click", function () {
+            measures[p.field] = option;
+            Array.prototype.forEach.call(opts.children, function (c) {
+              c.classList.remove("sel");
+            });
+            b.classList.add("sel");
+            refreshMeasures();
+          });
+          opts.appendChild(b);
+        });
+      }
+
       // value -> word anchor for the entertainment scale
       var ENT_TICKS = [
         { v: 0, label: "Not entertaining at all" },
@@ -976,6 +1002,7 @@
         if (p.kind === "intro") renderIntro(host);
         else if (p.kind === "text") renderText(host, p);
         else if (p.kind === "carousel") renderCarousel(host, p);
+        else if (p.kind === "choice") renderChoice(host, p);
         else if (p.kind === "matrix") renderMatrix(host, p);
         else if (p.kind === "slider") renderSlider(host, p);
         host.scrollTop = 0;
@@ -1002,6 +1029,7 @@
             return !!measures[it.field];
           });
         }
+        if (page.kind === "choice") return !!measures[page.field];
         if (page.kind === "matrix") {
           return matrixRows(page).every(function (row) {
             return !!measures[row.field];
@@ -1025,6 +1053,9 @@
           return page.items.length > 1
             ? "Please answer every statement to continue."
             : "Please select an option to continue.";
+        }
+        if (page.kind === "choice") {
+          return "Please select an option to continue.";
         }
         if (page.kind === "matrix") {
           return "Please rate every row to continue.";
