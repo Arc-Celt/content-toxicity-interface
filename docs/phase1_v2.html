@@ -583,8 +583,6 @@
         {
           kind: "choice",
           h1: "Your thoughts on the post",
-          // Toxicity always comes first
-          randomizeFrom: 1,
           questions: [
             {
               field: "toxicity",
@@ -595,6 +593,14 @@
               defs: TOX_DEFS,
               options: ["Very toxic", "Toxic", "Not toxic", "I'm not sure"],
             },
+          ],
+        },
+        {
+          kind: "choice",
+          h1: "Your thoughts on the post",
+          muted: true,
+          randomizeFrom: 0,
+          questions: [
             {
               field: "profanity",
               q: "Does the post you viewed contain obscene or profane language?",
