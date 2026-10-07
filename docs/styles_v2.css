@@ -602,6 +602,12 @@ body {
   background: #e8f5fd;
   font-weight: 700;
 }
+/* several single-choice questions sharing one page */
+.m-question + .m-question {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eff3f4;
+}
 /* Qualtrics-style matrix: one label column plus seven radio columns */
 .m-matrix {
   margin-top: 20px;

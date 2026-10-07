@@ -558,6 +558,7 @@
         "<strong>Very Toxic:</strong> A post that is highly hateful, aggressive, or disrespectful, and is very likely to make someone leave a discussion or stop sharing their perspective.",
         "<strong>Toxic:</strong> A post that is rude, disrespectful, or unreasonable, and may make someone leave a discussion or reduce their willingness to share their perspective.",
       ];
+      var YES_NO_UNSURE = ["Yes", "No", "I'm not sure"];
       var COMPRE_MIN_WORDS = 10;
       var COMPRE_MAX_WORDS = 50;
 
@@ -582,13 +583,60 @@
         {
           kind: "choice",
           h1: "Your thoughts on the post",
-          q:
-            "How would you rate the toxicity level of the post you viewed? " +
-            "To help answer this question, please refer to the following " +
-            "definitions:",
-          defs: TOX_DEFS,
-          field: "toxicity",
-          options: ["Very toxic", "Toxic", "Not toxic", "I'm not sure"],
+          // Toxicity always comes first
+          randomizeFrom: 1,
+          questions: [
+            {
+              field: "toxicity",
+              q:
+                "How would you rate the toxicity level of the post you " +
+                "viewed? To help answer this question, please refer to the " +
+                "following definitions:",
+              defs: TOX_DEFS,
+              options: ["Very toxic", "Toxic", "Not toxic", "I'm not sure"],
+            },
+            {
+              field: "profanity",
+              q: "Does the post you viewed contain obscene or profane language?",
+              defs: [
+                "<strong>Profanity/obscenity:</strong> Swear words, curse " +
+                  "words, or other obscene or profane language.",
+              ],
+              options: YES_NO_UNSURE,
+            },
+            {
+              field: "identity_negativity",
+              q: "Does the post you viewed contain identity-based negativity?",
+              defs: [
+                "<strong>Identity-based negativity:</strong> A negative, " +
+                  "discriminatory, stereotype, or hateful comment against a " +
+                  "group of people based on criteria including (but not " +
+                  "limited to) race or ethnicity, religion, gender, " +
+                  "nationality or citizenship, disability, age, or sexual " +
+                  "orientation.",
+              ],
+              options: YES_NO_UNSURE,
+            },
+            {
+              field: "insult",
+              q: "Does the post you viewed contain insulting language?",
+              defs: [
+                "<strong>Insults:</strong> Inflammatory, insulting, or " +
+                  "negative language towards a person or a group of people. " +
+                  "Such content is not necessarily identity specific.",
+              ],
+              options: YES_NO_UNSURE,
+            },
+            {
+              field: "threat",
+              q: "Does the post you viewed contain threatening language?",
+              defs: [
+                "<strong>Threatening:</strong> Language that is threatening " +
+                  "or encouraging violence or harm, including self-harm.",
+              ],
+              options: YES_NO_UNSURE,
+            },
+          ],
         },
         {
           kind: "matrix",
@@ -696,6 +744,11 @@
         // effect evenly across items instead of biasing any one of them.
         M_PAGES.forEach(function (p) {
           if (p.randomize && p.items) shuffle(p.items);
+          if (p.randomizeFrom !== undefined) {
+            p.questions = p.questions
+              .slice(0, p.randomizeFrom)
+              .concat(shuffle(p.questions.slice(p.randomizeFrom)));
+          }
         });
 
         document
@@ -854,35 +907,44 @@
         }
       }
 
-      // Single choice; stores the option text itself.
+      // Single-choice questions stacked on one page; each stores the option
+      // text itself.
       function renderChoice(host, p) {
-        var html =
-          '<div class="m-page active">' +
-          headingHtml(p) +
-          '<div class="m-q">' +
-          esc(p.q) +
-          "</div>";
-        if (p.defs) {
+        var html = '<div class="m-page active">' + headingHtml(p);
+        p.questions.forEach(function (question) {
           html +=
-            '<ul class="m-defs"><li>' + p.defs.join("</li><li>") + "</li></ul>";
-        }
-        host.innerHTML = html + '<div class="m-opts" id="m-opts"></div></div>';
+            '<div class="m-question"><div class="m-q">' +
+            esc(question.q) +
+            "</div>";
+          if (question.defs) {
+            html +=
+              '<ul class="m-defs"><li>' +
+              question.defs.join("</li><li>") +
+              "</li></ul>";
+          }
+          html += '<div class="m-opts"></div></div>';
+        });
+        host.innerHTML = html + "</div>";
 
-        var opts = document.getElementById("m-opts");
-        p.options.forEach(function (option) {
-          var b = document.createElement("button");
-          b.type = "button";
-          b.className = "m-choice" + (measures[p.field] === option ? " sel" : "");
-          b.textContent = option;
-          b.addEventListener("click", function () {
-            measures[p.field] = option;
-            Array.prototype.forEach.call(opts.children, function (c) {
-              c.classList.remove("sel");
+        var blocks = host.querySelectorAll(".m-question .m-opts");
+        p.questions.forEach(function (question, i) {
+          var opts = blocks[i];
+          question.options.forEach(function (option) {
+            var b = document.createElement("button");
+            b.type = "button";
+            b.className =
+              "m-choice" + (measures[question.field] === option ? " sel" : "");
+            b.textContent = option;
+            b.addEventListener("click", function () {
+              measures[question.field] = option;
+              Array.prototype.forEach.call(opts.children, function (c) {
+                c.classList.remove("sel");
+              });
+              b.classList.add("sel");
+              refreshMeasures();
             });
-            b.classList.add("sel");
-            refreshMeasures();
+            opts.appendChild(b);
           });
-          opts.appendChild(b);
         });
       }
 
@@ -1029,7 +1091,11 @@
             return !!measures[it.field];
           });
         }
-        if (page.kind === "choice") return !!measures[page.field];
+        if (page.kind === "choice") {
+          return page.questions.every(function (question) {
+            return !!measures[question.field];
+          });
+        }
         if (page.kind === "matrix") {
           return matrixRows(page).every(function (row) {
             return !!measures[row.field];
@@ -1055,7 +1121,7 @@
             : "Please select an option to continue.";
         }
         if (page.kind === "choice") {
-          return "Please select an option to continue.";
+          return "Please answer every question to continue.";
         }
         if (page.kind === "matrix") {
           return "Please rate every row to continue.";
