@@ -1276,7 +1276,10 @@
         var _appEl = document.getElementById("app");
         if (_appEl) new ResizeObserver(postHeight).observe(_appEl);
       }
-      setInterval(postHeight, 1000);
+      setInterval(function () {
+        lastSentHeight = -1;
+        postHeight();
+      }, 1000);
 
       init();
     </script>
