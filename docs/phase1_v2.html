@@ -424,7 +424,13 @@
           );
           return;
         }
-        currentItem = shuffle(mainCandidates)[0];
+        // Qualtrics assigns the video with an evenly-present Randomizer and
+        // passes it as main_item; fall back to a random pick if it is missing
+        // or not one of this stance's main stimuli.
+        var assigned = mainCandidates.filter(function (i) {
+          return i.id === params.get("main_item");
+        });
+        currentItem = assigned.length ? assigned[0] : shuffle(mainCandidates)[0];
 
         allSimilarities = loadCached("cache_similarities");
         if (!allSimilarities || !allSimilarities.length) {
