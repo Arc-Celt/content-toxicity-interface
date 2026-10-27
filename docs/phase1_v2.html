@@ -657,13 +657,15 @@
           labels: EMO_LABELS,
           blocks: [
             {
-              q: "To what extent did the post convey the following emotions?",
+              q:
+                "To what extent did the <strong>post convey</strong> the " +
+                "following emotions?",
               rows: emoRows("perceived_"),
             },
             {
               q:
-                "To what extent did this post make you personally feel the " +
-                "following emotions?",
+                "To what extent did this post make <strong>you personally</strong> " +
+                "feel the following emotions?",
               rows: emoRows("felt_"),
             },
           ],
@@ -985,12 +987,24 @@
         );
       }
 
+      // Word anchors alternate between a row above the track and one below it,
+      // so neighbours never share a row. The end anchors hug the track ends
+      // instead of centring on them, which would push them off the page.
       function renderSlider(host, p) {
         var nums = "";
-        var words = "";
-        ENT_TICKS.forEach(function (t) {
+        var above = "";
+        var below = "";
+        ENT_TICKS.forEach(function (t, i) {
           nums += "<span" + tickStyle(t.v) + ">" + t.v + "</span>";
-          words += "<span" + tickStyle(t.v) + ">" + esc(t.label) + "</span>";
+          var place =
+            t.v === 0
+              ? ' class="start"'
+              : t.v === 100
+                ? ' class="end"'
+                : tickStyle(t.v);
+          var word = "<span" + place + ">" + esc(t.label) + "</span>";
+          if (i % 2) above += word;
+          else below += word;
         });
         host.innerHTML =
           '<div class="m-page active">' +
@@ -1001,11 +1015,13 @@
           (mEntTouched ? measures[p.field] : "&mdash;") +
           '</div><div class="m-scale"><div class="m-nums">' +
           nums +
+          '</div><div class="m-ticks above">' +
+          above +
           '</div><input class="m-slider" id="m-ent" type="range" min="0" ' +
           'max="100" step="1" value="' +
           (measures[p.field] || "50") +
-          '" /><div class="m-ticks">' +
-          words +
+          '" /><div class="m-ticks below">' +
+          below +
           "</div></div></div>";
         var slider = document.getElementById("m-ent");
         slider.addEventListener("input", function () {
@@ -1018,7 +1034,7 @@
 
       function matrixGridHtml(block, b, labels) {
         var html =
-          (block.q ? '<div class="m-q">' + esc(block.q) + "</div>" : "") +
+          (block.q ? '<div class="m-q">' + block.q + "</div>" : "") +
           '<div class="m-matrix"><div class="m-mrow m-mhead">' +
           '<span class="m-mlabel"></span>';
         labels.forEach(function (label) {

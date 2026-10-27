@@ -731,9 +731,11 @@ body {
 .m-nums span,
 .m-ticks span {
   position: absolute;
+  text-align: center;
+}
+.m-nums span {
   width: 116px;
   margin-left: -58px;
-  text-align: center;
 }
 .m-nums {
   height: 22px;
@@ -741,12 +743,42 @@ body {
   font-weight: 700;
   color: #536471;
 }
+/* word anchors alternate rows: 25 and 75 sit just above the track, 0, 50 and
+   100 below it. Widths are shares of the track, picked so no two anchors in a
+   row can meet: 34% + 30% / 2 stays under the 50% gap below, and 44% under
+   the 50% gap above. */
 .m-ticks {
-  height: 42px;
-  padding-top: 9px;
   font-size: 11.5px;
   line-height: 1.3;
   color: #8a8f94;
+}
+.m-ticks span {
+  width: 30%;
+  transform: translateX(-50%);
+}
+.m-ticks.above span {
+  width: 44%;
+  bottom: 7px;
+}
+.m-ticks span.start,
+.m-ticks span.end {
+  width: 34%;
+  transform: none;
+}
+.m-ticks span.start {
+  left: 0;
+  text-align: left;
+}
+.m-ticks span.end {
+  right: 0;
+  text-align: right;
+}
+.m-ticks.above {
+  height: 36px;
+}
+.m-ticks.below {
+  height: 42px;
+  padding-top: 9px;
 }
 .m-value {
   text-align: center;
@@ -814,23 +846,21 @@ body {
   .m-carousel {
     gap: 2px;
   }
+  /* the end anchors no longer overhang the track, so it can run nearly the
+     full width */
   .m-scale {
-    margin: 18px 24px 0;
+    margin: 18px 10px 0;
   }
+  /* narrow enough that "100" stays inside the narrower margin */
   .m-nums span {
-    width: 80px;
-    margin-left: -40px;
-  }
-  /* as wide as the longest word, so each anchor stacks a word or two per
-     line instead of running into its neighbour */
-  .m-ticks span {
-    width: min-content;
-    margin-left: 0;
-    transform: translateX(-50%);
+    width: 40px;
+    margin-left: -20px;
   }
   .m-ticks {
     font-size: 11px;
-    height: 58px;
+  }
+  .m-ticks.below {
+    height: 40px;
   }
   /* compact enough that a seven-point list fits without scrolling */
   .m-h1 {
