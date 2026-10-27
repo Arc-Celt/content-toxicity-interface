@@ -988,21 +988,14 @@
       }
 
       // Word anchors alternate between a row above the track and one below it,
-      // so neighbours never share a row. The end anchors hug the track ends
-      // instead of centring on them, which would push them off the page.
+      // so neighbours never share a row.
       function renderSlider(host, p) {
         var nums = "";
         var above = "";
         var below = "";
         ENT_TICKS.forEach(function (t, i) {
           nums += "<span" + tickStyle(t.v) + ">" + t.v + "</span>";
-          var place =
-            t.v === 0
-              ? ' class="start"'
-              : t.v === 100
-                ? ' class="end"'
-                : tickStyle(t.v);
-          var word = "<span" + place + ">" + esc(t.label) + "</span>";
+          var word = "<span" + tickStyle(t.v) + ">" + esc(t.label) + "</span>";
           if (i % 2) above += word;
           else below += word;
         });
