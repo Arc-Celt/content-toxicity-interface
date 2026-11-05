@@ -1494,45 +1494,97 @@ function openReportModal() {
   document.getElementById("report-thanks").style.display = "none";
   var list = document.getElementById("report-reasons");
   list.innerHTML = "";
+  var chosen = {};
+  var note = document.createElement("textarea");
+  note.className = "report-other";
+  note.maxLength = 200;
+  note.placeholder = "Tell us more";
+  var submit = document.createElement("button");
+  submit.type = "button";
+  submit.className = "report-submit";
+  submit.textContent = "Submit";
+  submit.disabled = true;
   REPORT_REASONS.forEach(function (r) {
     var btn = document.createElement("button");
+    btn.type = "button";
     btn.className = "report-reason-btn";
+    btn.setAttribute("role", "checkbox");
+    btn.setAttribute("aria-checked", "false");
     btn.innerHTML =
-      "<span>" +
-      esc(r.label) +
-      '</span><span style="color:#536471;">&rsaquo;</span>';
+      '<span class="report-check"></span><span>' + esc(r.label) + "</span>";
     btn.addEventListener("click", function () {
-      if (reportTarget.type === "post") {
-        queueWrite("post_reports", {
-          pid: PID,
-          session_type: SESSION_TYPE,
-          item_id: currentItem.id,
-          reason: r.id,
-        });
-      } else {
-        queueWrite("comment_reports", {
-          pid: PID,
-          session_type: SESSION_TYPE,
-          item_id: currentItem.id,
-          comment_id: reportTarget.commentId,
-          reason: r.id,
-        });
+      chosen[r.id] = !chosen[r.id];
+      btn.classList.toggle("sel", chosen[r.id]);
+      btn.setAttribute("aria-checked", String(chosen[r.id]));
+      submit.disabled = !REPORT_REASONS.some(function (x) {
+        return chosen[x.id];
+      });
+      if (r.id === "other") {
+        note.style.display = chosen.other ? "block" : "none";
+        if (chosen.other) note.focus();
       }
-      if (reportTarget.btn) {
-        reportTarget.btn.style.color = "#FFB000";
-        reportTarget.btn.querySelector("svg").outerHTML = SVG_REPORT_ON;
-      }
-      if (reportTarget.type === "post") {
-        var reportLabel = document.getElementById("report-label");
-        if (reportLabel) reportLabel.textContent = "Reported";
-      }
-      document.getElementById("report-body").style.display = "none";
-      document.getElementById("report-thanks").style.display = "block";
-      setTimeout(closeReportModal, 1400);
     });
     list.appendChild(btn);
+    if (r.id === "other") list.appendChild(note);
   });
+  submit.addEventListener("click", function () {
+    submit.disabled = true;
+    // Several reasons share the one reason value, joined in list order, so
+    // the p1/p2 report fields keep their shape and a single reason reads
+    // exactly as before. A note on Other rides along as "other:<text>".
+    var text = cleanReportNote(note.value);
+    submitReport(
+      REPORT_REASONS.filter(function (x) {
+        return chosen[x.id];
+      })
+        .map(function (x) {
+          return x.id === "other" && text ? "other:" + text : x.id;
+        })
+        .join(";"),
+    );
+  });
+  list.appendChild(submit);
   document.getElementById("report-modal").classList.add("open");
+}
+
+// Qualtrics pipes p1_post_reported raw into the phase-2 iframe URL, so a
+// stray & # or " would cut off the parameters after it, and ; is the reason
+// separator. Keep letters, digits and plain punctuation only.
+function cleanReportNote(s) {
+  return String(s || "")
+    .replace(/[^\p{L}\p{N} .,!'()\-:\/]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function submitReport(reason) {
+  if (reportTarget.type === "post") {
+    queueWrite("post_reports", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      reason: reason,
+    });
+  } else {
+    queueWrite("comment_reports", {
+      pid: PID,
+      session_type: SESSION_TYPE,
+      item_id: currentItem.id,
+      comment_id: reportTarget.commentId,
+      reason: reason,
+    });
+  }
+  if (reportTarget.btn) {
+    reportTarget.btn.style.color = "#FFB000";
+    reportTarget.btn.querySelector("svg").outerHTML = SVG_REPORT_ON;
+  }
+  if (reportTarget.type === "post") {
+    var reportLabel = document.getElementById("report-label");
+    if (reportLabel) reportLabel.textContent = "Reported";
+  }
+  document.getElementById("report-body").style.display = "none";
+  document.getElementById("report-thanks").style.display = "block";
+  setTimeout(closeReportModal, 1400);
 }
 
 function closeReportModal() {

@@ -346,11 +346,13 @@ body {
   border: none;
   border-top: 1px solid #eff3f4;
   padding: 14px 8px;
+  font-family: inherit;
   font-size: 15px;
+  color: inherit;
   cursor: pointer;
   transition: background 0.15s;
   display: flex;
-  justify-content: space-between;
+  gap: 12px;
   align-items: center;
 }
 .report-reason-btn:first-child {
@@ -358,6 +360,69 @@ body {
 }
 .report-reason-btn:hover {
   background: #f7f9f9;
+}
+/* checkbox, so a reason reads as something to tick rather than a link */
+.report-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cfd9de;
+  border-radius: 4px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.report-reason-btn.sel .report-check {
+  background: #1d9bf0;
+  border-color: #1d9bf0;
+}
+.report-reason-btn.sel .report-check::after {
+  content: "";
+  width: 4px;
+  height: 9px;
+  margin-top: -2px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+/* optional note under Other, indented to line up with the reason labels.
+   16px text stops iOS zooming the page when it is focused. */
+.report-other {
+  display: none;
+  box-sizing: border-box;
+  width: calc(100% - 38px);
+  min-height: 64px;
+  margin: 0 0 8px 38px;
+  padding: 8px 10px;
+  border: 1px solid #cfd9de;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+.report-other:focus {
+  outline: none;
+  border-color: #1d9bf0;
+}
+.report-submit {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 26px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  background: #0f1419;
+  color: #fff;
+  cursor: pointer;
+}
+.report-submit:disabled {
+  background: #cfd9de;
+  cursor: not-allowed;
 }
 .report-thanks {
   display: none;
