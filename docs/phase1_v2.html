@@ -430,7 +430,9 @@
         var assigned = mainCandidates.filter(function (i) {
           return i.id === params.get("main_item");
         });
-        currentItem = assigned.length ? assigned[0] : shuffle(mainCandidates)[0];
+        currentItem = assigned.length
+          ? assigned[0]
+          : shuffle(mainCandidates)[0];
 
         allSimilarities = loadCached("cache_similarities");
         if (!allSimilarities || !allSimilarities.length) {
@@ -597,6 +599,21 @@
                 "viewed? To help answer this question, please refer to the " +
                 "following definitions:",
               defs: TOX_DEFS,
+              options: ["Very toxic", "Toxic", "Not toxic", "I'm not sure"],
+            },
+            // How participants think each party sees the same post.
+            {
+              field: "toxicity_typical_dem",
+              q:
+                "How do you think a typical Democrat would rate the toxicity " +
+                "level of the post you viewed?",
+              options: ["Very toxic", "Toxic", "Not toxic", "I'm not sure"],
+            },
+            {
+              field: "toxicity_typical_rep",
+              q:
+                "How do you think a typical Republican would rate the toxicity " +
+                "level of the post you viewed?",
               options: ["Very toxic", "Toxic", "Not toxic", "I'm not sure"],
             },
           ],
