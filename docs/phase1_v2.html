@@ -595,7 +595,7 @@
             {
               field: "toxicity",
               q:
-                "How would you rate the toxicity level of the post you " +
+                "How would <strong>you</strong> rate the toxicity level of the post you " +
                 "viewed? To help answer this question, please refer to the " +
                 "following definitions:",
               defs: TOX_DEFS,
@@ -605,14 +605,14 @@
             {
               field: "toxicity_typical_dem",
               q:
-                "How do you think a typical Democrat would rate the toxicity " +
+                "How do you think a <strong>typical Democrat</strong> would rate the toxicity " +
                 "level of the post you viewed?",
               options: ["Very toxic", "Toxic", "Not toxic", "I'm not sure"],
             },
             {
               field: "toxicity_typical_rep",
               q:
-                "How do you think a typical Republican would rate the toxicity " +
+                "How do you think a <strong>typical Republican</strong> would rate the toxicity " +
                 "level of the post you viewed?",
               options: ["Very toxic", "Toxic", "Not toxic", "I'm not sure"],
             },
@@ -945,7 +945,7 @@
         p.questions.forEach(function (question) {
           html +=
             '<div class="m-question"><div class="m-q">' +
-            esc(question.q) +
+            question.q + // authored in this file; may hold <strong>, as in the matrix
             "</div>";
           if (question.defs) {
             html +=
